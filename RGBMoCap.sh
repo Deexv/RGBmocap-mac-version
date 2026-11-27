@@ -11,6 +11,11 @@ cd -- "$root" || exit 1
 if [ "$(uname -s)" != Darwin ] && [ -n "${DISPLAY:-}" ] && [ -z "${QT_QPA_PLATFORM:-}" ]; then
     export QT_QPA_PLATFORM=xcb
 fi
+if [ "$(uname -s)" = Darwin ]; then
+    # Apple Silicon: prefer Metal-backed Qt rendering and keep the recommended
+    # GPU wired limit reachable for inference on MPS.
+    export QT_QUICK_BACKEND=metal 2>/dev/null || true
+fi
 status=0
 "$python" -I -X utf8 -u -B "$root/launch_source.py" "$@" || status=$?
 [ "$status" -eq 0 ] || echo "RGB MoCap exited with code $status. See the messages above."

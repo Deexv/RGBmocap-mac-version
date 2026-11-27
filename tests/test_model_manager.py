@@ -22,7 +22,7 @@ class InstalledModelTests(unittest.TestCase):
         for target in (patch.multiple(manager, **paths), patch.object(models, 'MODELS', paths['MODELS'])):
             target.start()
             self.addCleanup(target.stop)
-        self.model = models.BY_KEY['flow_sam']
+        self.model = models.BY_KEY['vitpose']
         self.payload = self.model.path
         self.payload.parent.mkdir(parents=True)
         self.payload.write_bytes(b'Example installed model')
@@ -30,15 +30,15 @@ class InstalledModelTests(unittest.TestCase):
         self.receipt.write_bytes(b'Record')
         self.keys = [self.model.key]
         self.alias = next(path for path, _ in manager.runtime_aliases(self.model)
-                          if 'FlowHMR' in path.parts)
+                          if 'GVHMR' in path.parts)
         self.alias.parent.mkdir(parents=True)
 
     def test_shared_workflows_use_actual_dependencies(self):
         users = manager.model_consumers(manager.workflow_catalog())
-        self.assertEqual(users['flow_sam'], ('flowhmr', 'exmr'))
-        self.assertEqual(users['flowhmr'], ('flowhmr',))
-        pass  # optional-model consumer mapping removed in the macOS build
-        self.assertEqual(set(users['sam31_people']), {'flowhmr', 'exmr', 'gvhmr'})
+        self.assertEqual(users['vitpose'], ('gvhmr',))
+        self.assertEqual(users['gvhmr'], ('gvhmr',))
+        self.assertEqual(users['smplx'], ('gvhmr',))
+        self.assertEqual(users['pva'], ('gvhmr',))
 
     def test_removes_known_links_but_keeps_import_source_and_unrelated_files(self):
         atomic_json(self.receipt, {'source': str(self.external)})
@@ -125,7 +125,7 @@ class InstalledModelTests(unittest.TestCase):
             self.external.symlink_to(self.payload)
         except OSError as error:
             self.skipTest(f'File symlinks unavailable on this system: {error}')
-        with patch.dict(manager.MODEL_FILES, {'flow_config': self.external}, clear=True):
+        with patch.dict(manager.MODEL_FILES, {'vitpose_wholebody': self.external}, clear=True):
             with self.assertRaisesRegex(ValueError, 'shares its storage path'):
                 manager.removal_plan(self.keys)
         self.assertTrue(self.external.is_symlink())

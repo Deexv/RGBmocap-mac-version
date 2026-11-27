@@ -1,6 +1,6 @@
 {
  "version": 2,
- "note": "Regenerated for the macOS mocap+Blender build",
+ "note": "macOS (Apple Silicon) mocap + Blender export build",
  "files": {
   ".gitattributes": {
    "sha256": "24a655c121cb46978b07e75ced463528ff1b1c07239f098bbc86860130c397b7",
@@ -19,16 +19,16 @@
    "bytes": 1753
   },
   "README.md": {
-   "sha256": "638f7a1681c50335a4abde1297335d4fa7016428e2b175d6d22e14f861595295",
-   "bytes": 18238
+   "sha256": "65fff984da54adacf2f680b49fca9d4d6ababe30e500417c889e7142af981f26",
+   "bytes": 3747
   },
   "RGBMoCap.sh": {
-   "sha256": "b697a1466567f8d2f0e4c0a3aff5e4e7e87cb4dfad8c9fe6b665cbdccc0f79e3",
-   "bytes": 670
+   "sha256": "2cc245f5223e98a246473fd9ce75fbfec4631d661a4d09d5698a799431c3fa2e",
+   "bytes": 896
   },
   "SOURCE_MANIFEST.json": {
-   "sha256": "c911e635afd4ff5e49cb5bc0cb47d82bed97769c1babe8ca502ad6e7cff9b4f8",
-   "bytes": 550330
+   "sha256": "cc64560fa4f4f762306d2a9a7bf04a1fc4416b92c17ffd48293373921afa2c62",
+   "bytes": 167372
   },
   "THIRD_PARTY_NOTICES.md": {
    "sha256": "1c5f7e009b1c45ff61a1cc4a78a93b0b490d9a48473088229f92319b09081bf2",
@@ -207,7 +207,7 @@
    "bytes": 1077
   },
   "installer/runtime-lock-macos.json": {
-   "sha256": "3309e9eccd0a998427a238cde80c28be1dabfdaf9b54c77b6d157b593cc079a7",
+   "sha256": "a7e50ded2c1b4cc38d840f89dc30b96706b1c383e66cadc2a1676c892da4e6b6",
    "bytes": 48269
   },
   "installer/runtime_sources/antlr4_python3_runtime-4.9.3-py3-none-any/SOURCE_WHEEL.json": {
@@ -875,8 +875,8 @@
    "bytes": 6278
   },
   "mocap/character_export_dialog.py": {
-   "sha256": "906384229497739146b419aca364ecb4331e3e5cc649d5b219ef7aa9a4471530",
-   "bytes": 3316
+   "sha256": "fdda4a2a1bf049dac7b74744b28165f20842e472414ed3497edfaa4bc7acad7e",
+   "bytes": 3385
   },
   "mocap/character_gl.py": {
    "sha256": "29858844353541a62f8c89da160ce2eaf11647d06d942aea96f8728b9bb7710e",
@@ -1067,16 +1067,16 @@
    "bytes": 3711
   },
   "mocap/models.py": {
-   "sha256": "3040e3b78c439f473f662c49be03478f105a3a1d3b97c4172dc641ddb4f91903",
-   "bytes": 35353
+   "sha256": "6f05c16eefcc3971f6ccbcf448a4b710a33d24cdb91af07c5890ff88e606af8b",
+   "bytes": 35544
   },
   "mocap/motion_tools.py": {
    "sha256": "14fdcb968e825a102496558ef7c88d396e0e2d7e4b77d2c2e24a899b8d766b9f",
    "bytes": 10640
   },
   "mocap/mps_compat.py": {
-   "sha256": "556f899be768d370b3fa1885c3917be693fdbdbb1a8bd14aacc8c95575b6bba2",
-   "bytes": 4389
+   "sha256": "67ad58d2cce14f128e47765797022c53b445e71a705e29cd40e534729bde4764",
+   "bytes": 5085
   },
   "mocap/multilevel_contacts.py": {
    "sha256": "02be19c3307f329eb7abe6e48ec796f2dee5d5322d1cd66405f0c0e3e734e988",
@@ -1395,8 +1395,8 @@
    "bytes": 267
   },
   "mocap/runtime_registry.py": {
-   "sha256": "987f04420b65cf946dd220f629eeaa0699827c28123f372b21111f43e87fbd3e",
-   "bytes": 6193
+   "sha256": "85aa11985529ce19005c25185ddaa6b76c9990ad04d7537015f09848aa7a4391",
+   "bytes": 6169
   },
   "mocap/scene_camera.py": {
    "sha256": "7d22b830c1c00ebc8a1fce05b98b815c9b44c31e07cca5489634cf433c0b354e",
@@ -1431,8 +1431,8 @@
    "bytes": 4674
   },
   "mocap/source_export_dialog.py": {
-   "sha256": "27e04cd391cb079f658d92be7639a4393caeeb0dc4ea27864145965acf3b4afa",
-   "bytes": 20822
+   "sha256": "a9e52764b927d9f6b0e047ee6bf094896eb935451bdb866f0a5293d313982f9e",
+   "bytes": 20891
   },
   "mocap/source_export_worker.py": {
    "sha256": "dc4111eb01ecee78a8afd13601c6f4ee55d0f23c5957fc495c76fa8d54dfe16e",
@@ -1531,8 +1531,8 @@
    "bytes": 2410
   },
   "mocap/workspace_ui.py": {
-   "sha256": "23a0b7b96f6d4ededdf35d143e65addc8831ca23256619f47376b3577796a6e6",
-   "bytes": 41310
+   "sha256": "b0f9cdac74abe8ea7291bc0aa85711a33d9cc06de9d7dfd46b9f85e97eae33f7",
+   "bytes": 35385
   },
   "native_compat/LICENSE": {
    "sha256": "6da05663049417a91409fa349bfad5778ed56c9ef68226dde28dffd541481579",
@@ -1591,8 +1591,8 @@
    "bytes": 1237
   },
   "pyproject.toml": {
-   "sha256": "4fcfa3e86a83280d061fad1f34dc9cadb8914ffbf18112807a7a98a878287bde",
-   "bytes": 336
+   "sha256": "602000c892a1c5b7f4a762a6321fc1b2046de09776b4ac14d1fd3d831b0eea1d",
+   "bytes": 321
   },
   "requirements-build.txt": {
    "sha256": "d99de0a6485486a774416bf4e91c46e9ed0ac18ab6a2316a4370c061b72de673",
@@ -1602,25 +1602,13 @@
    "sha256": "c0b07c153f2f6a0bf762c2c88f38ac8d1f5a1d10f5e8028a7cfa11db3664d03e",
    "bytes": 303
   },
-  "scripts/trim_batch1.py": {
-   "sha256": "fbbe4daf3e1acde78e1a5aad962afc5d72cc683f414f43c27f398f74fd5b1610",
-   "bytes": 17859
-  },
-  "tests/test_default_settings.py": {
-   "sha256": "7e74463f8f1ca04459029332ee8e7397fbcb3a3382549e2499adc6a878f41b06",
-   "bytes": 22206
-  },
-  "tests/test_linux_setup.py": {
-   "sha256": "084954d91ac40a82b0d4751ba850ef3fe0d69abd59e60d36bf059fbb9b8b0778",
-   "bytes": 4247
-  },
   "tests/test_local_choices.py": {
-   "sha256": "5a4e01ded21ff0a5ac89b738d4634a3c0f343f09fa6413e1f79f3871a74169a5",
-   "bytes": 16307
+   "sha256": "e14e2e2a6a00536e56d59413521a0ddbf954eeb87f8951795783ea488d237709",
+   "bytes": 14282
   },
   "tests/test_model_manager.py": {
-   "sha256": "bbf9a9aa7f8b888b20019b04ef6fe6b81d795614e1637a8752f7a3a36e773d25",
-   "bytes": 7950
+   "sha256": "e2e9d1c0f431d0e17871b8b92f46400f9ac54e57ba340efad1f19a090d070457",
+   "bytes": 7885
   },
   "tests/test_retarget_empty_foot_contacts.py": {
    "sha256": "4d40287e2b20ddab9b3489e2166c46c66aa20be49642b862b0c59dd5dcb10dfb",
@@ -3959,16 +3947,16 @@
    "bytes": 3365
   },
   "tools/check_source.py": {
-   "sha256": "a5792c5dbedf732e634a3f1c6376c0998633b0476f118db07da74162ca7dab90",
-   "bytes": 4281
+   "sha256": "ada06a1cc455e7c2ddb713bc9cbe849928eb997ad7de8568562da4b4a8963f21",
+   "bytes": 4267
   },
   "tools/git_bootstrap.sh": {
    "sha256": "fdc44def38643b1b946fbac535d342eac9ae32381f83efb92330ee2cea6c102a",
    "bytes": 2335
   },
   "tools/git_managed_install.py": {
-   "sha256": "e15561ad754e78b71254ab43a2d3cd7a968ffcbc975fdb729929cc438ce1ff51",
-   "bytes": 8276
+   "sha256": "325055a300e0bcdfba5c91cbe9c6055448c188513464af54b7f9a50101bf4bfa",
+   "bytes": 8153
   },
   "tools/git_transaction.py": {
    "sha256": "99b0ebcd0557863d30dff21bc2d86dd2688ae5926f4ddebf980bc50df58d38a7",
@@ -3991,8 +3979,8 @@
    "bytes": 1226
   },
   "tools/optional_support.py": {
-   "sha256": "e1f15594d6b1d64557b4ca4072dd681c3f589815f1ad593e1be7d1ad57e920c5",
-   "bytes": 1809
+   "sha256": "423a15180a625508597278c3fa781b7ad280f1b53814d15dea6b4dc8768e2e18",
+   "bytes": 517
   },
   "tools/pinned_download.py": {
    "sha256": "530463ad85abe6d0da0bd1dd399ddbbd4fdcdf1154f1a4f782a3ca58e97f22c3",

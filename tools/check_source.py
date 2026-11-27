@@ -51,7 +51,7 @@ def main():
             lock=json.loads((ROOT/name).read_text(encoding='utf-8'))
             if registry_hash is None or registry_hash!=lock.get('registry_sha256'):
                 errors.append('Runtime registry differs from '+name+'. Review and update the locked hash.')
-            if {g['key'] for g in lock['groups']}!={'shared','gui','flow','hand','htd','exmr'}:
+            if {g['key'] for g in lock['groups']}!={'shared','gui','hand','htd'}:
                 errors.append('Runtime profile set changed in '+name)
         except (OSError, ValueError, TypeError, KeyError) as error:
             errors.append('Invalid runtime lock '+name+': '+str(error))

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rgb-mocap"
 version = "1.0.1"
-description = "Native Windows video motion capture, humanoid retargeting and FBX/VMD export"
+description = "macOS (Apple Silicon) video motion capture and Blender export"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 

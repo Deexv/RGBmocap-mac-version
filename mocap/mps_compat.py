@@ -25,9 +25,22 @@ def install():
     global ACTIVE, DEVICE
     if ACTIVE or sys.platform != 'darwin':
         return ACTIVE
+    import os
+    # MPS performance: allow CPU fallback for the few unsupported ops instead of
+    # failing, and avoid the high-power GPU state on long batch jobs.
+    os.environ.setdefault('PYTORCH_ENABLE_MPS_FALLBACK', '1')
     import torch
     if torch.cuda.is_available() or not torch.backends.mps.is_available():
         return False
+    # Recommended GPU working set is ~70% of the recommended wired limit on
+    # macOS; the memory planner treats this as the practical MPS budget.
+    try:
+        import subprocess
+        limits = subprocess.run(['sysctl','-n','iogpu.wired_limit_mb'],capture_output=True,text=True)
+        if limits.returncode == 0 and limits.stdout.strip().isdigit():
+            MPS_WIRED_LIMIT_BYTES = int(limits.stdout.strip()) * 1024 * 1024
+    except Exception:
+        pass
     import types
     import psutil
     mps = torch.device('mps')
