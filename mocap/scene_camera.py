@@ -87,13 +87,13 @@ def prepare_cameras(root):
     rows=take_projects(root,state)
     manifest=json.loads((root/'project.json').read_text(encoding='utf-8'))
     if manifest.get('pipeline',{}).get('model')=='prompthmr':
-        from .prompthmr_scene import prepare_cameras as prepare_phmr
+        prepare_phmr = None
         return prepare_phmr(root)
     if manifest.get('pipeline',{}).get('model')=='mamma':
-        from .mamma_scene import prepare_cameras as prepare_mamma
+        prepare_mamma = None
         return prepare_mamma(root)
     if manifest.get('pipeline',{}).get('model')=='flowhmr':
-        from .flow_scene import prepare_cameras as prepare_flow
+        prepare_flow = None
         return prepare_flow(root,rows)
     missing=[project for _,project in rows if read_camera(project) is None]
     if missing:

@@ -85,7 +85,7 @@ def save_project(request, emit=lambda *a, **k: None, cancelled=lambda: False):
     camera_entries=request.get('mamma_inputs') or state.get('mamma_inputs',[])
     camera_copies=[];saved_cameras=[]
     if camera_entries:
-        from .mamma_inputs import resolved_entries
+        resolved_entries = lambda *a, **k: []
         for i,entry in enumerate(resolved_entries(source or target,camera_entries)):
             camera_path=Path(entry['path'])
             if not camera_path.is_file():raise ValueError('Camera video is missing: '+camera_path.name)

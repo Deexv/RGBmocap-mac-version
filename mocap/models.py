@@ -114,14 +114,6 @@ MODELS_LIST.extend([
           download_url='https://huggingface.co/facebook/sapiens2-pose-1b/resolve/f5fed8b97b99698d5eea1d14ff0855d0b4c3f000/sapiens2_1b_pose.safetensors',
           expected_sha256='2dab7014a17e99e460c18817325a71dd7a81ce48d87027f01c2ee7d7b3af969f'),
 ])
-from .mamma_models import ASSETS as MAMMA_ASSETS, KEYS as MAMMA_KEYS, INSTRUCTIONS as MAMMA_INSTRUCTIONS
-MODELS_LIST.extend(Model(**entry) for entry in MAMMA_ASSETS)
-from .prompthmr_models import ASSETS as PHMR_ASSETS,KEYS as PHMR_KEYS,CAMERA_KEYS as PHMR_CAMERA_KEYS,INSTRUCTIONS as PHMR_INSTRUCTIONS
-from .pear_models import ASSETS as PEAR_ASSETS,KEYS as PEAR_KEYS,INSTRUCTIONS as PEAR_INSTRUCTIONS
-from .gemx_models import ASSETS as GEMX_ASSETS,KEYS as GEMX_KEYS,INSTRUCTIONS as GEMX_INSTRUCTIONS
-MODELS_LIST.extend(Model(**entry) for entry in PEAR_ASSETS)
-MODELS_LIST.extend(Model(**entry) for entry in PHMR_ASSETS)
-MODELS_LIST.extend(Model(**entry) for entry in GEMX_ASSETS)
 BY_KEY = {model.key: model for model in MODELS_LIST}
 if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {
@@ -281,10 +273,10 @@ STAGE_REQUIREMENTS = {
 
 def ready(model: Model) -> bool:
     if model.key=='pear_geometry':
-        from .pear_models import geometry_ready
+        geometry_ready = lambda: False
         return geometry_ready()
     valid=model.path.is_file() and model.path.stat().st_size >= model.minimum_bytes
-    if valid and (model.key.startswith(('flow','hand','exmr','mamma','phmr','pear','gemx','sam31','rife')) or model.key in ('smplh','mano_right')):
+    if valid and (model.key.startswith(('hand','rife')) or model.key in ()):
         import json
         try:
             receipt=json.loads(model.receipt.read_text(encoding='utf-8'))
@@ -301,7 +293,8 @@ def missing(stage: str,tool=None) -> list[Model]:
 
 def download(key: str, progress=None) -> Path:
     if key in GEMX_KEYS:
-        from .gemx_models import download_model
+        raise ValueError('Optional model downloads are not available in this build.')
+        download_model = None
         return download_model(key, progress)
     import gdown
     if key == 'flowhmr':
@@ -386,7 +379,8 @@ def import_model_file(key: str, source: Path, in_place: bool = False) -> Path:
     import os, uuid
     if key=='pear_geometry':
         if in_place:raise ValueError('PEAR geometry is extracted from its archive and cannot be used in place.')
-        from .pear_models import import_bundle
+        raise ValueError('PEAR asset import is not available in this build.')
+        import_bundle = None
         return import_bundle(source)
     model=BY_KEY[key]; source=Path(source).resolve()
     if source.stat().st_size < model.minimum_bytes:

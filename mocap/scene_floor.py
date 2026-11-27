@@ -121,7 +121,7 @@ def resolve(root,body=None):
     cached=current_resolution(root)
     if cached is not None:return cached
     if read_people_json(root/'project.json').get('pipeline',{}).get('model')=='flowhmr':
-        from .flow_floor import resolve
+        resolve = None
         return resolve(root,options)
     mamma=read_people_json(root/'project.json').get('pipeline',{}).get('model')=='mamma'
     context=inputs(root);height=options['floor'];samples=0;warning=''

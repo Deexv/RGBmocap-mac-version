@@ -171,7 +171,7 @@ def combined_job(takes, bundle, emit, camera_cache):
 
 
 def run(request, emit=lambda *a, **k: None):
-    from .gemx_result import is_project
+    is_project = lambda project: False
 
     request = Path(request)
     bundles, take_checks, camera_cache = [], [], {}
@@ -183,11 +183,6 @@ def run(request, emit=lambda *a, **k: None):
             raise ValueError('Invalid Blender export request')
         if combined and any(row['target'] != payload['target'] for row in rows):
             raise ValueError('One Blender file requires a single export destination.')
-        if any(is_project(row['project']) for row in rows):
-            if len(rows) != 1:
-                raise ValueError('Export one native SOMA result at a time.')
-            from .gemx_blend import run as native_export
-            return native_export(rows[0], request, emit)
         if combined and len(rows) > 1:
             take_checks = [Take(row) for row in rows]
             bundle = Bundle(payload['target'], request)

@@ -42,11 +42,11 @@ def main():
         if p.suffix=='.py':
             try:ast.parse(p.read_text(encoding='utf-8-sig'),filename=str(r))
             except (SyntaxError,UnicodeError) as exc:errors.append(str(exc))
-    for name in ['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/USER_GUIDE.md','docs/BUILD.md','installer/runtime-lock.json','installer/external-assets.json']:
+    for name in ['README.md','LICENSE','THIRD_PARTY_NOTICES.md','docs/MACOS.md','installer/runtime-lock-macos.json','installer/external-assets.json']:
         if not (ROOT/name).is_file():errors.append('Missing '+name)
     registry=ROOT/'mocap/runtime_registry.py'
     registry_hash=hashlib.sha256(registry.read_bytes()).hexdigest() if registry.is_file() else None
-    for name in ('installer/runtime-lock.json','installer/runtime-lock-linux.json','installer/runtime-lock-macos.json'):
+    for name in ('installer/runtime-lock-macos.json',):
         try:
             lock=json.loads((ROOT/name).read_text(encoding='utf-8'))
             if registry_hash is None or registry_hash!=lock.get('registry_sha256'):

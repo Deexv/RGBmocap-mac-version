@@ -537,7 +537,7 @@ class MotionView(ViewportBase):
 
     def paintGL(self):
         if self.live_active:
-            from .pear.live_view import LiveRenderer
+            LiveRenderer = None
             if self._pear_renderer is None:self._pear_renderer=LiveRenderer(self)
             self._paint_camera=self.camera()
             try:self._pear_renderer.paint(self)
@@ -938,9 +938,6 @@ class MotionView(ViewportBase):
         # Final independent depth layer: exported bones stay above characters,
         # with the same ordering whether Bone Overlay was on or off previously.
         self.draw_bones(painter,bone_actors)
-        if self.show_faces and self.face_archive is not None:
-            from .face_overlay import draw_faces
-            draw_faces(self,bone_actors,lines3d)
         if self._empty_people_notice and not characters_drawn:
             painter.setPen(QColor(theme_color('#bcbcbc')))
             painter.drawText(self.rect().adjusted(25,60,-25,-60),Qt.AlignCenter|Qt.TextWordWrap,

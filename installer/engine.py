@@ -23,10 +23,10 @@ PYTHON_PLATFORM='windows-x86_64-none' if WINDOWS else 'macos-aarch64-none' if RE
 UV='uv.exe' if WINDOWS else 'uv'
 
 PREFIX='@@SETUP@@'
-TARGETS={'shared':'runtime','gui':'runtime_gui','flow':'runtime_flow','hand':'runtime_hand','htd':'runtime_htd','exmr':'runtime_exmr'}
+TARGETS={'shared':'runtime','gui':'runtime_gui','hand':'runtime_hand','htd':'runtime_htd'}
 APP_TOP={'RGBMoCap.exe','_internal','assets','mocap','native_compat','third_party','tools','docs','runtime_character',
          'worker_boot.py','scene_boot.py','README.md','LICENSE','THIRD_PARTY_NOTICES.md',
-         'requirements-windows.txt','requirements-flow-windows.txt','requirements-hand-windows.txt','BUILD_INFO.json'}
+         'requirements-build.txt'}
 
 class Cancelled(Exception):pass
 

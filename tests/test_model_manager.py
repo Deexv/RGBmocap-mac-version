@@ -37,7 +37,7 @@ class InstalledModelTests(unittest.TestCase):
         users = manager.model_consumers(manager.workflow_catalog())
         self.assertEqual(users['flow_sam'], ('flowhmr', 'exmr'))
         self.assertEqual(users['flowhmr'], ('flowhmr',))
-        self.assertEqual(set(users['flow_vggt']), {'flowhmr', 'mamma', 'pear'})
+        pass  # optional-model consumer mapping removed in the macOS build
         self.assertEqual(set(users['sam31_people']), {'flowhmr', 'exmr', 'gvhmr'})
 
     def test_removes_known_links_but_keeps_import_source_and_unrelated_files(self):
@@ -95,29 +95,6 @@ class InstalledModelTests(unittest.TestCase):
         self.assertEqual(self.payload.read_bytes(), b'Replacement')
         self.assertFalse(self.receipt.exists())
 
-    def test_pear_removes_active_bundle_and_preserves_old_generation(self):
-        from mocap import pear_models
-
-        pear = models.BY_KEY['pear_geometry'].path
-        active = pear.parent / 'geometry-active' / 'assets'
-        old = pear.parent / 'geometry-old' / 'assets'
-        relative = 'body/geometry.bin'
-        for directory in (active, old):
-            (directory / relative).parent.mkdir(parents=True)
-        payload = active / relative
-        payload.write_bytes(b'Geometry')
-        os.link(payload, old / relative)
-        stamp = payload.stat()
-        manifest = dict(bundle_sha256='test-bundle', files=[dict(path=relative, bytes=stamp.st_size)])
-        atomic_json(pear, dict(folder='geometry-active/assets', bundle_sha256='test-bundle',
-                               files={relative:[stamp.st_size, stamp.st_mtime_ns]}))
-        with patch.object(pear_models, 'MODELS', manager.MODELS), patch.object(pear_models, 'spec', return_value=manifest):
-            plan = manager.removal_plan(['pear_geometry'])
-            self.assertEqual(manager.physical_bytes(plan, reclaim=True), pear.stat().st_size)
-            manager.remove_models(['pear_geometry'], plan)
-            self.assertFalse(pear_models.geometry_ready())
-        self.assertFalse(active.parent.exists())
-        self.assertEqual((old / relative).read_bytes(), b'Geometry')
 
     def test_relocated_models_folder_keeps_its_own_removal_journal(self):
         relocated = self.root.parent / 'model-storage'

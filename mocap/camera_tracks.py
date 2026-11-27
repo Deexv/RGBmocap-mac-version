@@ -107,17 +107,7 @@ def load(project,group=None,cancelled=lambda:False,reference_cache=None):
     model=state.get('pipeline',{}).get('model');group=Path(group).resolve() if group else None
     had_scene=(project/'scene_camera.json').exists()
     camera=read_camera(project)
-    if camera is None and group is None and model=='flowhmr' and not had_scene:
-        # Single-person FlowHMR does not publish the multi-person scene receipt.
-        # Reuse its committed WV basis/height, never refit to the corrected body.
-        from .flow_placement import current
-        if not current(project):raise ValueError('FlowHMR placement is stale. Use Prepare Preview.')
-        world=read(tracked(project/'flow_world.json'))
-        raw=load_array(tracked(project/'flow_camera.npz'),'camera_RT_yup')
-        matrix=np.eye(4);matrix[:3,:3]=raw[0,:3,:3]@np.asarray(world['scene_basis'],float).T
-        matrix[:3,3]=-matrix[:3,:3]@np.array([0.,world['camera_height'],0.])
-        camera=dict(world_to_camera=validate_transform(matrix),K=world['intrinsics'])
-    if camera is None and group is None and model in ('exmr','gvhmr') and not had_scene:
+    if camera is None and group is None and model=='gvhmr' and not had_scene:
         camera=paired_reference(project,cancelled,reference_cache)
         for name,stamp in camera['sources'].items():dependencies[project/name]=stamp
     if camera is None:raise ValueError('Saved camera is unavailable or stale. Use Prepare Preview.')
@@ -129,74 +119,9 @@ def load(project,group=None,cancelled=lambda:False,reference_cache=None):
         placement=context(group,project);transform=validate_transform(placement['transform'])
         tracked(group/'people_scene.json')
     base=reference@np.linalg.inv(transform);items=[];note='';warning='';static_camera=False
-    if model=='mamma':
-        from .mamma_body import WORLD_ROTATION
-        root=group or project;meta=read(tracked(root/'project.json'))
-        work=(root/meta['mamma_work']).resolve();workspace=(root/meta['workspace_root']).resolve()
-        if not work.is_relative_to(workspace):raise ValueError('Invalid MAMMA camera data path.')
-        saved=read(tracked(work/'camera-world.json'));entries=read(tracked(work/'inputs.json'))
-        if set(saved)!={e['id'] for e in entries}:raise ValueError('MAMMA camera identities differ.')
-        for e in entries:
-            c=saved[e['id']];ext=np.asarray(c['extrinsics_matrix'],float)
-            if ext.shape!=(3,4):raise ValueError('Invalid MAMMA camera matrix.')
-            m=np.eye(4);m[:3,:3]=ext[:,:3]@WORLD_ROTATION.T;m[:3,3]=ext[:,3]
-            if np.any(np.abs(c.get('distortion_coeffs',[0]))>1e-8):note=warning='Distorted camera videos may not align with the pinhole overlay.'
-            items.append(record(e['id'],c['intrinsic_matrix'],c['image_size'],m,meta['start'],meta['fps'],'Saved fixed MAMMA calibration'))
-        if not np.allclose(items[0]['matrices'][0],base,atol=1e-6):raise ValueError('MAMMA camera world changed. Prepare Preview first.')
-    elif model=='prompthmr' and camera.get('camera_track'):
-        from .people_store import root_for
-        saved=camera['camera_track'];p=(project/saved['path']).resolve()
-        root=group or root_for(project,state)
-        if not p.is_relative_to(root) or file_stat(tracked(p))!=saved['stat']:raise ValueError('PromptHMR camera track is stale. Reconstruct 3D.')
-        matrices=load_array(p,'world_to_camera')
-        if matrices.ndim!=3 or matrices.shape[1:]!=(4,4):raise ValueError('Invalid PromptHMR camera track.')
-        matrices=matrices@np.linalg.inv(transform)
-        items=[record('Camera 1',camera['K'],[state['width'],state['height']],matrices,saved['start'],saved['fps'],'Native DroidCalib/Metric3D camera trajectory; metric scale is estimated')]
-        note='Estimated moving camera from masked DroidCalib and Metric3D; tracking and scale can drift.'
-    elif model in ('flowhmr','exmr'):
-        root=group or project;meta=read(tracked(root/'project.json'))
-        if model=='flowhmr':
-            from .flow_camera import saved_interval
-            static_camera=saved_interval(project,state)==-1
-            from .flow_placement import current
-            if not current(project):raise ValueError('FlowHMR placement is stale. Use Prepare Preview.')
-            raw=load_array(tracked(root/'flow_camera.npz'),'camera_RT_yup');r=raw[:,:3,:3];valid_rotations(r)
-            rotations=r@r[0].T@base[:3,:3]
-            original_centers=-np.einsum('tji,tj->ti',r,raw[:,:3,3])
-            basis=base[:3,:3].T@r[0]
-            displacement=(original_centers-original_centers[0])@basis.T
-            note='Estimated VGGT camera path; movement scale is approximate. Motion scale 0 keeps the saved camera center. Gizmos only; video overlays keep the calibrated reference.'
-        else:
-            receipt=read(tracked(project/'exmr_camera_sources.json'));root=(project/receipt['root']).resolve()
-            if not project.is_relative_to(root):raise ValueError('Invalid ExMR camera root.')
-            p=tracked(root/'exmr_camera.npy')
-            if file_stat(p)!=receipt['root_stat']:raise ValueError('ExMR camera changed. Prepare Preview first.')
-            r=load_array(p);valid_rotations(r)
-            rotations=r@np.asarray(receipt['reference_rotation'],float).T@base[:3,:3]
-            meta=read(tracked(root/'project.json'));displacement=None
-            note='ExMR camera rotation; fixed camera position.'
-            policy=read(tracked(root/'exmr_camera.json'))
-            static_camera=bool(policy['identity']['static'])
-            if not policy['identity']['static']:
-                anchor=project if group is None else (group/read(group/'people_scene.json')['anchor']).resolve()
-                if group is not None and not anchor.is_relative_to(group):raise ValueError('Invalid camera reference take.')
-                try:path=paired_reference(anchor,cancelled,reference_cache)
-                except (OSError,ValueError,RuntimeError):path=None
-                if path is not None:
-                    for name,stamp in path['sources'].items():dependencies[anchor/name]=stamp
-                points=path.get('centers') if path is not None else None
-                if (points is not None and len(points)==len(r) and abs(path['start']-meta['start'])<1e-6 and path['fps']==meta['fps']):
-                    displacement=points-points[0]
-                    note='Estimated ExMR camera movement from original paired world/camera roots. Approximate, not measured motion. Gizmos only; video overlays keep the calibrated reference.'
-                else:warning='Camera movement reference is unavailable or incomplete; showing rotation only.'
-        m=np.tile(np.eye(4),(len(rotations),1,1));m[:,:3,:3]=rotations
-        center=-base[:3,:3].T@base[:3,3];m[:,:3,3]=-np.einsum('tij,j->ti',rotations,center)
-        items=[record('Camera 1',camera['K'],[state['width'],state['height']],m,meta['start'],meta['fps'],note,displacement)]
-    else:
-        items=[record('Camera 1',camera['K'],[state['width'],state['height']],base,state['start'],state['fps'],'Saved reference camera; no dynamic camera track exposed')]
-        note='Saved reference camera only; no dynamic camera translation is available.'
+    items=[record('Camera 1',camera['K'],[state['width'],state['height']],base,state['start'],state['fps'],'Saved reference camera; no dynamic camera track exposed')]
+    note='Saved reference camera only; no dynamic camera translation is available.'
     if cancelled():return None
     if (project/'scene_camera.json').exists()!=had_scene:raise ValueError('Camera inputs changed while loading.')
-    if model=='flowhmr' and not current(project):raise ValueError('FlowHMR placement changed while loading. Use Prepare Preview.')
     if any(file_stat(p)!=stamp for p,stamp in dependencies.items()):raise ValueError('Camera inputs changed while loading.')
     return dict(cameras=items,model=model,note=note,warning=warning,project=str(project),static_camera=static_camera,camera_sources={str(p):stamp for p,stamp in dependencies.items()})
