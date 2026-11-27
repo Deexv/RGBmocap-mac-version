@@ -601,6 +601,8 @@ class MainWindow(PreviewExportWorkspace,CharacterWorkspace,ModelWorkspace,Projec
         self.play_anchor = 0
         self.play_cycle = 0
         self.preview_audio = None
+        # PEAR live preview was removed in the macOS build; stream/audio code still reads the flag.
+        self._pear_active = False
         self.playback_tick = False
         self.presented_times = deque()
         self.preview_data = None
@@ -872,7 +874,6 @@ class MainWindow(PreviewExportWorkspace,CharacterWorkspace,ModelWorkspace,Projec
             self._rife_source_fps = 0
             self.rife_interpolation.setChecked(False)
             self.setWindowTitle('RGB MoCap | Motion Workspace')
-            self.restore_workflow_options({})
             self.camera_tools.restore_background({})
             self.handflow_refine.blockSignals(True)
             self.handflow_refine.setChecked(self.model_choice.currentData()=='gvhmr')

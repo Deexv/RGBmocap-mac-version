@@ -46,10 +46,6 @@ class ProjectSaving:
                 preview_fps=self.info['fps'],
                 workspace_view=self.workspace_view(),
                 workspace_settings=self.workspace_settings(),
-                mamma_inputs=self.mamma_inputs,
-                mamma_active_camera=self.mamma_active_camera,
-                flow_options=self.selected_flow_options(),
-                exmr_options={'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'},
                 correction=self.selected_correction_options(), frame=self.slider.value(),
                 trim=[self.slider.clip_in, self.slider.clip_out]))
             self._project_save_request = request

@@ -27,7 +27,7 @@
    "bytes": 896
   },
   "SOURCE_MANIFEST.json": {
-   "sha256": "cc64560fa4f4f762306d2a9a7bf04a1fc4416b92c17ffd48293373921afa2c62",
+   "sha256": "5b7a549f476e682ec119926c60805943cc5b218b18906966ca4a6d06e800179c",
    "bytes": 167372
   },
   "THIRD_PARTY_NOTICES.md": {
@@ -983,8 +983,8 @@
    "bytes": 3784
   },
   "mocap/gui.py": {
-   "sha256": "ecc3a066579eaa430849a640fe145c05143933ea41901122a93a4bbe22e83850",
-   "bytes": 117135
+   "sha256": "12cc5f146b63ff8f7bb09c19687cfda24a64e4c13cf55558efa4cf3f88106707",
+   "bytes": 117223
   },
   "mocap/gvhmr_attention.py": {
    "sha256": "d70ff976907917224f93960f4e92732cbd65833483a15e5da7513b3d0f46bf0f",
@@ -1219,8 +1219,8 @@
    "bytes": 793
   },
   "mocap/preview_audio.py": {
-   "sha256": "10332bd311661344ef65b29465b4ed9d6007749970199ee945d8671ce57c2dc9",
-   "bytes": 4182
+   "sha256": "8ea0da4314dbd551177a41c1b784e1dd7aac0189ce211f1ec14709f621e1d55a",
+   "bytes": 4030
   },
   "mocap/preview_data.py": {
    "sha256": "b225cc2d034f8d045670bd5a143479d3a3a00f17d62b439aa4d66609e961f459",
@@ -1255,8 +1255,8 @@
    "bytes": 14869
   },
   "mocap/project_save_ui.py": {
-   "sha256": "f22116a2031bc6e5a27a3c58fa1125fa0e295c8cbc17fa6612b39661c696950e",
-   "bytes": 4951
+   "sha256": "029a4f0d844b7d42cccb147983703fc69ff552c5356803e121c628a5503c174e",
+   "bytes": 4635
   },
   "mocap/project_storage.py": {
    "sha256": "390339ecc56e07efb540dabb943fc453c8c85da32887041b4c5360e6abcb954f",
@@ -1267,8 +1267,8 @@
    "bytes": 3604
   },
   "mocap/project_workspace_ui.py": {
-   "sha256": "1fe9498b04d4c70b7aa9e8aad2d383028cb0baa6c2ec7d25054fc205d20747d1",
-   "bytes": 23321
+   "sha256": "b17a1d882935295a1274a9084f69c056c2c28dac53d55b9850987e32fd8dd120",
+   "bytes": 16614
   },
   "mocap/queue_groups.py": {
    "sha256": "3e39fd8468be33e617330fed4d3ba7fe102805551b81d1fddd9cc789903df69f",
@@ -1463,8 +1463,8 @@
    "bytes": 3956
   },
   "mocap/stream_ui.py": {
-   "sha256": "68cecdadc734b7671c0b1e85cddf7aac1b05da4b6852a779db56291d7a05d886",
-   "bytes": 23303
+   "sha256": "9123a3bc6ce1e98a0a1d3bb10ae00fbacb43fbc884e25bc5480612ae71ff8da1",
+   "bytes": 23295
   },
   "mocap/surface_landmarks.py": {
    "sha256": "7869bdf2743082ce242244430bc93da599d572d43d0ae1ee2de1a291084f6a6f",
