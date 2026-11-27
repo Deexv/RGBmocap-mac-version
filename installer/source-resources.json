@@ -126,6 +126,16 @@
       "path": "third_party/ue5_mannequin/reference.json",
       "bytes": 35878,
       "sha256": "4e133ce1a5540c1b064c632173976d471b003e2b0cc6bbebef3f08bb25443a27"
+    },
+    {
+      "path": "docs/media/rgbmocap-demo.mp4",
+      "bytes": 397402,
+      "sha256": "e950a844eacf908f08f11468a2cd93a39d0f995f37154bc692e30ca2347e0d96"
+    },
+    {
+      "path": "docs/media/rgbmocap-demo-poster.jpg",
+      "bytes": 94034,
+      "sha256": "a26effc72761218eb1fe3af00416c660babbe6904b08fb7443f64f0f0d377823"
     }
   ]
 }
