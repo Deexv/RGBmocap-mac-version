@@ -164,7 +164,7 @@ class CharacterWorkspace:
 
     def character_sources(self):
         from .motion_tools import result_is_current
-        from .gemx_result import RECEIPT, is_project
+        RECEIPT, is_project = None, (lambda project: False)
         from .people_store import safe_child
         if self.people_state:
             people=self.people_state['people']
@@ -272,9 +272,7 @@ class CharacterWorkspace:
             path=self.character_root/'characters'/('job-'+uuid.uuid4().hex+'.json');atomic_json(path,job)
             args=['--request',str(path)]
             if job['mode']=='retarget':
-                from .gemx_result import is_project
-                if not is_project(job['takes'][0]['project']):
-                    args+=['--project',job['takes'][0]['project']]
+                args+=['--project',job['takes'][0]['project']]
             cmd=command(ROOT,'character',args,frozen=getattr(sys,'frozen',False))
         except Exception as exc:
             self.character_refresh_queue=[]

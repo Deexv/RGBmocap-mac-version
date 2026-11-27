@@ -3,7 +3,7 @@ import json,os
 import numpy as np
 from pathlib import Path
 from .motion_tools import selected_export
-from .gemx_result import is_project
+is_project = lambda project: False
 from .result_artifacts import file_stat
 
 
@@ -24,15 +24,6 @@ def run(request,emit=lambda *a,**k:None):
             if source is None or source.resolve()!=Path(row['source']).resolve():raise ValueError('Selected target motion changed. Export again.')
             if source.resolve() in destinations:raise ValueError('An export destination overlaps a committed source file.')
             temporary=target.with_name('.'+target.name+'.rgbmocap-'+request.stem+'.partial')
-            if is_project(project):
-                from .gemx_skeleton_export import write as write_soma
-
-                def progress(done,total):
-                    emit('progress',stage='copy_bvh',current=i*total+done,total=len(rows)*total,message='Export SOMA BVH')
-
-                staged.append((temporary,target))
-                native_checks.append(write_soma(temporary,row,source,destinations,'bvh',progress))
-                continue
             stamp=file_stat(source)
             scene=row.get('scene')
             if scene is not None:

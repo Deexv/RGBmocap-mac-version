@@ -57,19 +57,16 @@ def export_project(project: Path, result="auto"):
     require_supported_project(project)
     from .engines import activate, link_models
     import json
-    mamma=json.loads((project/"project.json").read_text(encoding="utf-8")).get("pipeline",{}).get("model")=="mamma"
-    if not mamma:
-        root = activate("GVHMR")
-        link_models(root)
+    root = activate("GVHMR")
+    link_models(root)
     import torch
-    if not mamma:
-        from hmr4d.utils.smplx_utils import make_smplx
+    from hmr4d.utils.smplx_utils import make_smplx
     from .result_artifacts import begin_update,commit_artifacts,file_stat
     from .models import BY_KEY
-    from .mamma_body import body_path,model_for
+    from .mamma_body import body_path
     registered_body=body_path(project)
     model_stamp=file_stat(registered_body)
-    body = model_for(project) if mamma else make_smplx("supermotion").eval()
+    body = make_smplx("supermotion").eval()
     result = resolve_motion_result(project, result)
     import json
     fps=float(json.loads((project/'project.json').read_text(encoding='utf-8')).get('fps',30)) if (project/'project.json').exists() else 30.
@@ -108,15 +105,12 @@ def export_project(project: Path, result="auto"):
     selected = dict(motions)[result]
     label={"initial":"GVHMR original", "refined":"GVHMR + HTD-Refine",
         "footmr_initial":"GVHMR + FootMR", "footmr_refined":"GVHMR + HTD-Refine + FootMR"}[body_result(result)]
-    exmr=state.get('pipeline',{}).get('model')=='exmr'
-    if exmr:label='ExMR original'
-    if mamma:label='MAMMA original'
-    if state.get('pipeline',{}).get('model')=='prompthmr':label='PromptHMR original'
+    label='GVHMR original'
     from .motion_tools import has_handflow
     if has_handflow(result):label+=' + HandFlow'
     atomic_json(project / "export.json", {"format": "BVH", "frames": len(selected["body_pose"]), "fps": fps,
         "length_unit": "meter", "up_axis": "Y", "rotation_order": target_record.get("export_bind",{}).get("rotation_order_default","ZXY"), "joints": target_record['names'],
-        "skeleton":"Humanoid52", "finger_motion":"MAMMA fitted body and finger motion" if mamma else "ExMR native finger inference" if exmr else "HandFlow finger inference; body and wrists preserved" if has_handflow(result) else "Source relaxed pose animated relative to open bind; finger inference is not enabled",
+        "skeleton":"Humanoid52", "finger_motion":"HandFlow finger inference; body and wrists preserved" if has_handflow(result) else "Source relaxed pose animated relative to open bind; finger inference is not enabled",
         "bind_pose":target_record.get('export_bind',{}),
         "result_kind": result, "source": label + (" + Motion Correction" if result.startswith('corrected_') else '') + " SMPL-X motion",
         "ground_truth_accuracy": None})

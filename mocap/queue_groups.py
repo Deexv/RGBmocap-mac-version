@@ -3,10 +3,8 @@ from pathlib import Path
 import json
 import uuid
 
-BATCH_STAGES = {'flow_batch','exmr_batch','gvhmr_batch'}
+BATCH_STAGES = {'gvhmr_batch'}
 PHASES = {
-    'flow_batch': {'flow_features':'flow_features','flowhmr':'flowhmr','all':'flowhmr'},
-    'exmr_batch': {'exmr_preprocess':'exmr_preprocess','body':'exmr_features','hand':'exmr_features','exmr':'exmr','all':'exmr'},
     'gvhmr_batch': {'pose':'features','features':'features','gvhmr':'gvhmr','all':'gvhmr'},
 }
 MAX_ITEMS = 128
@@ -22,31 +20,9 @@ def grouped_jobs(jobs, root):
     buckets = {}
     for stage,args in jobs:
         buckets.setdefault(stage,[]).append(args)
-    # ExMR benefits for both one and multiple actors. FlowHMR's measured gain
-    # is for one actor; retain its existing two-phase multi-person scheduling.
-    joined = {}
-    for stages,batch in [(('exmr_preprocess','exmr_features','exmr'),'exmr_batch'),
-                         (('flow_features','flowhmr'),'flow_batch')]:
-        if batch=='flow_batch' and len(projects)!=1:continue
-        if not all(stage in buckets for stage in stages):continue
-        items=[[_item(a) for a in buckets[stage]] for stage in stages]
-        if any(item is None for group in items for item in group):continue
-        if any(group!=items[0] for group in items[1:]):continue
-        joined[stages[0]]=(batch,items[0])
-        for stage in stages[1:]:del buckets[stage]
     result = []
     for stage,items in buckets.items():
-        if stage in joined:
-            batch,requests=joined[stage]
-            for begin in range(0,len(requests),MAX_ITEMS):
-                result.append((batch,_batch_args(root,'all',requests[begin:begin+MAX_ITEMS])))
-            continue
-        spec = {'flow_features':('flow_batch',['flow_features']),
-                'flowhmr':('flow_batch',['flowhmr']),
-                'exmr_preprocess':('exmr_batch',['exmr_preprocess']),
-                'exmr_features':('exmr_batch',['body','hand']),
-                'exmr':('exmr_batch',['exmr']),
-                'gvhmr':('gvhmr_batch',['all'])}.get(stage)
+        spec = {'gvhmr':('gvhmr_batch',['all'])}.get(stage)
         if spec is None or len(items)<2 or any(_item(a) is None for a in items):
             result.extend((stage,args) for args in items)
             continue
@@ -82,20 +58,7 @@ def _batch_args(root, phase, items):
 def join_single_pipeline(jobs, project):
     """Join only the ready queue head, after prepare/track chose its project."""
     if project is None or not jobs:return jobs
-    stage = jobs[0][0]
-    stages = {'exmr_preprocess':('exmr_preprocess','exmr_features','exmr'),
-              'flow_features':('flow_features','flowhmr')}.get(stage)
-    if stages is None or tuple(s for s,_ in jobs[:len(stages)])!=stages:return jobs
-    items = []
-    for _,args in jobs[:len(stages)]:
-        args=list(args or [])
-        if '--project' not in args:args=['--project',str(project),*args]
-        item=_item(args)
-        if item is None or Path(item['project'])!=Path(project):return jobs
-        items.append(item)
-    if any(item!=items[0] for item in items[1:]):return jobs
-    batch='exmr_batch' if stage=='exmr_preprocess' else 'flow_batch'
-    return [(batch,_batch_args(project,'all',[items[0]])),*jobs[len(stages):]]
+    return jobs
 
 
 def validate(request, stage):
@@ -105,7 +68,7 @@ def validate(request, stage):
     root = Path(request['root']).resolve(strict=True)
     jobs = request.get('jobs')
     if not isinstance(jobs,list) or not 1<=len(jobs)<=MAX_ITEMS:raise ValueError('Invalid batch size')
-    model = {'flow_batch':'flowhmr','exmr_batch':'exmr','gvhmr_batch':'gvhmr'}[stage]
+    model = {'gvhmr_batch':'gvhmr'}[stage]
     from .motion_tools import RESULTS
     clean = []
     for job in jobs:

@@ -303,7 +303,8 @@ class PreviewDataLoader(QThread):
             result = ProjectPreview(project)
             cancelled = lambda: self.stopping or generation != self.generation
             try:
-                from .gemx_result import is_project, open_preview
+                is_project = lambda project: False
+                open_preview = None
                 if is_project(project):
                     open_preview(result, cancelled)
                     if cancelled():raise LoadCancelled()

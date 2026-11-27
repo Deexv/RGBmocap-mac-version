@@ -14,11 +14,8 @@ def cache_dependency_files(root):
     """Keep historical worker receipt inputs, without using them to install packages."""
     root=Path(root)
     worker=(root/'mocap/worker.py').read_text(encoding='utf8')
-    names={'requirements-windows.txt','requirements-flow-windows.txt','requirements-hand-windows.txt'}
-    names.update(re.findall(r"ROOT\s*/\s*['\"](requirements-[^'\"]+\.txt)['\"]",worker))
-    paths=[root/name for name in sorted(names)]
-    missing=[p.name for p in paths if not p.is_file()]
-    if missing:raise FileNotFoundError('Missing worker cache dependency files: '+', '.join(missing))
+    names=set(re.findall(r"ROOT\s*/\s*['\"](requirements-[^'\"]+\.txt)['\"]",worker))
+    paths=[root/name for name in sorted(names) if (root/name).is_file()]
     return paths
 
 def application_version():

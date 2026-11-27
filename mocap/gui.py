@@ -37,28 +37,19 @@ STAGES['save_fbx']='Save FBX'
 STAGES['stream_reference']='Export Live Link Reference Rig'
 STAGES['copy_bvh']='Save BVH'
 STAGES['save_blend']='Save Blender Project'
-STAGES['save_blend_scene']='Save MAMMA Blender Scene'
 STAGES["footmr"] = "Refine Ankles / FootMR"
 STAGES["handflow"] = "Infer Fingers / HandFlow"
 STAGES['correct'] = 'Motion Correction'
 from .workspace_ui import build_workspace
 from .theme import set_appearance_style, theme_color, themed_colors, ui_px
 from .people_ui import PeopleWorkspace
-from .face_ui import FaceWorkspace
 from .stream_ui import StreamWorkspace
 from .project_save_ui import ProjectSaving
 from .project_workspace_ui import ModelWorkspace
-STAGES.update(mamma_prepare='Prepare Multi-view Videos',mamma_masks='MAMMA Person Masks',mamma_landmarks='MAMMA Surface Landmarks',mamma_camera='MAMMA Cameras',mamma_fit='MAMMA 3D Fit',mamma_publish='MAMMA Motion Correction and Preview')
-STAGES.update(prompthmr_prepare='Prepare PromptHMR Video',prompthmr_track='PromptHMR People and Masks',prompthmr_pose='PromptHMR Camera, Keypoints and Motion',prompthmr_world='PromptHMR Shared World and Post-optimization',prompthmr_publish='PromptHMR Motion Correction and Preview')
-from .gemx_ui import GemXWorkspace
-STAGES['gemx_reconstruct']='Reconstruct Native SOMA / GEM-X'
-STAGES['gemx_correct']='Motion Correction / GEM-X'
 STAGES['save_project']='Save Project As'
-STAGES.update(people='Find People',sam31_people='Find People with SAM 3.1',person='Prepare Person Motion',face_track='Track Face')
-STAGES.update(flow_camera='Estimate Scene Camera / VGGT-Omega', flow_features='Extract Body and Hand Features / SAM', flowhmr='Reconstruct Motion / FlowHMR', flow_export='Prepare FlowHMR Preview and FBX', import_model='Import Model')
-STAGES.update(exmr_preprocess='ExMR Body, Hand and Foot Keypoints',exmr_features='ExMR Body and Hand Features',exmr='Reconstruct Motion / ExMR')
+STAGES.update(people='Find People',person='Prepare Person Motion',import_model='Import Model')
 
-STAGES.update(flow_batch='Process FlowHMR Motion',exmr_batch='Process ExMR Motion',gvhmr_batch='GVHMR Multi-person',features='GVHMR Image Observations')
+STAGES.update(gvhmr_batch='GVHMR Multi-person',features='GVHMR Image Observations')
 
 class ModelDownloadDialog(QDialog):
     """Readable, selectable provider instructions with bounded scrolling."""
@@ -262,37 +253,7 @@ class ModelsDialog(QDialog):
         self.refresh()
 
     def add_workflow_panel(self, key):
-        if key in ('mamma', 'prompthmr'):
-            if key == 'mamma':
-                from .mamma_manager import runtime_panel
-            else:
-                from .prompthmr_manager import runtime_panel
-            self.workflow_panel.addWidget(runtime_panel(self))
-        elif key == 'gemx':
-            from .gemx_runtime import configuration
-            try:
-                configuration()
-            except (OSError, RuntimeError, ValueError) as error:
-                text = str(error)
-            else:
-                text = 'GEM-X runtime is ready.'
-            note = QLabel(themed_colors(text + ' Review the upstream terms before downloading. '
-                '<a style="color:#8ed2ff" href="https://huggingface.co/nvidia/GEM-X">GEM-X</a> · '
-                '<a style="color:#8ed2ff" href="https://huggingface.co/nvidia/SOMA-X">SOMA-X</a> · '
-                '<a style="color:#8ed2ff" href="https://github.com/open-mmlab/mmpose/tree/main/projects/rtmpose">Detector</a>'))
-            note.setWordWrap(True)
-            note.setOpenExternalLinks(True)
-            self.workflow_panel.addWidget(note)
-        elif key == 'pear':
-            from .pear_runtime import status
-            note = QLabel(status()[1] + '\nCamera Align uses optional VGGT and GeoCalib files.')
-            note.setWordWrap(True)
-            self.workflow_panel.addWidget(note)
-        from .sam31_runtime import SUPPORTED
-        if key in SUPPORTED:
-            note = QLabel('SAM 3.1 is optional. Run Setup_SAM31.cmd with RGB MoCap closed before using it.')
-            note.setWordWrap(True)
-            self.workflow_panel.addWidget(note)
+        pass
 
     def usage_text(self, key):
         from .model_manager import workflow_name
@@ -358,9 +319,7 @@ class ModelsDialog(QDialog):
                 if item.column() == 0 and item.data(Qt.UserRole)}
 
     def removal_idle(self):
-        return not (self.window.busy or getattr(self.window, '_pear_running', False)
-                    or getattr(self.window, 'pear_align_phase', None)
-                    or getattr(self.window, 'pear_session', None)
+        return not (self.window.busy
                     or getattr(self.window, 'contact_saving', False))
 
     def sync_delete_button(self):
@@ -414,7 +373,6 @@ class ModelsDialog(QDialog):
         from .models import STAGE_REQUIREMENTS
         for i, model in enumerate(self.models):
             name = model.name + (" (Optional: HTD / 2D)" if self.tool.key == "gvhmr" and model.key == "pva" else "")
-            if self.tool.key=='pear' and model.key in STAGE_REQUIREMENTS['pear_align']:name+=' (Optional: Camera Align)'
             available = ready(model)
             status = "Ready" if available else "Missing"
             if model.key in MODEL_FILES:
@@ -539,12 +497,9 @@ class ModelsDialog(QDialog):
             self.sync_task_status()
 
     def pending_downloads(self):
-        from .flow_hamer import MODEL_KEYS
         if self.inventory_tab:
             return []
-        excluded = {'sam31_people', 'rife49', *MODEL_FILES}
-        if self.tool.key == 'flowhmr' and not self.window.flow_hamer.isChecked():
-            excluded.update(MODEL_KEYS)
+        excluded = {'rife49', *MODEL_FILES}
         return [model for model in self.models if model.key not in excluded
                 and (model.drive_id or model.download_url) and not ready(model)]
 
@@ -579,13 +534,13 @@ class ModelsDialog(QDialog):
             raise ValueError("This model is not part of the selected motion tool.")
         model = BY_KEY[key]
         name, _ = QFileDialog.getOpenFileName(picker_parent or self, 'Import ' + model.name, '',
-            ('PEAR assets (assets.zip);;All files (*)' if key=='pear_geometry' else f'Model file ({model.path.name});;All files (*)'))
+            f'Model file ({model.path.name});;All files (*)')
         if not name:
             return
         arguments = ['--model', key, '--video', name]
         from .paths import MODELS
         # Anything outside the model's models-folder path can be copied there or used where it is.
-        if key != 'pear_geometry' and Path(name).resolve() != (MODELS / model.relative).resolve():
+        if Path(name).resolve() != (MODELS / model.relative).resolve():
             box = QMessageBox(picker_parent or self)
             box.setWindowTitle('Import ' + model.name)
             box.setText('Use this file where it is, or copy it into the models folder?')
@@ -605,12 +560,9 @@ class ModelsDialog(QDialog):
 
 
 from .character_ui import CharacterWorkspace
-from .mamma_ui import MammaWorkspace
-from .prompthmr_ui import PromptHMRWorkspace
-from .pear_ui import PearWorkspace
 from .preview_export_ui import PreviewExportWorkspace
 
-class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWorkspace,MammaWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,FaceWorkspace,QMainWindow):
+class MainWindow(PreviewExportWorkspace,CharacterWorkspace,ModelWorkspace,ProjectSaving,PeopleWorkspace,StreamWorkspace,QMainWindow):
     def __init__(self, video: Path | None = None):
         super().__init__()
         self.setWindowTitle("RGB MoCap | Motion Workspace")
@@ -619,8 +571,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.resize(min(ui_px(1440), max(self.minimumWidth(), available.width() - 16)),
                     min(ui_px(880), max(self.minimumHeight(), available.height() - 40)))
         self.video_path = None
-        self.init_mamma()
-        self.init_pear()
         self.project = None
         self.workspace_root=None
         self._workspace_loading=False
@@ -704,17 +654,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     @read_only_checks
     def update_readiness(self):
         self.export_preview_action.setEnabled(self.preview_export_available())
-        self.rife_interpolation.setVisible(not self._pear_active)
-        self.track_face.setVisible(not self._pear_active)
-        self.face_overlay.setVisible(not self._pear_active)
-        for control in (self.set_neutral_face, self.reset_neutral_face, self.neutral_face_note):
-            control.setVisible(not self._pear_active)
-        self.track_face.setEnabled(not self.busy and not self.contact_saving)
-        cache = getattr(self, '_face_playback', None)
-        self.update_neutral_face_controls(cache.archive if cache else None)
-        if self._pear_active:
-            if hasattr(self,'camera_tools'):self.camera_tools.sync()
-            self.pear_sync_controls();return
+        self.rife_interpolation.setVisible(True)
         if getattr(self,'_readiness_depth',0):
             self._readiness_pending=True
             return
@@ -726,15 +666,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         stages = tool.stages(self.htd_refine.isChecked(), self.footmr_refine.isChecked(), handflow=self.handflow_refine.isChecked())
         from .models import STAGE_REQUIREMENTS, BY_KEY
         required = {key for stage in stages for key in STAGE_REQUIREMENTS.get(stage, ())}
-        if self.flow_hamer.isChecked():
-            for checkbox in (self.fast_sam,self.flow_hand_stride4):
-                blocked=checkbox.blockSignals(True);checkbox.setChecked(True);checkbox.blockSignals(blocked)
-            if tool.key=='flowhmr':
-                from .flow_hamer import MODEL_KEYS
-                required.update(MODEL_KEYS)
-        if tool.key=='flowhmr' and self.flow_sampling.currentData()==-1:required.discard('flow_vggt')
-        if tool.key=='mamma' and self.mamma_camera_mode.currentData()=='manual':required.difference_update(('flow_vggt','pear_geocalib'))
-        if tool.key=='prompthmr' and self.prompthmr_camera.currentData()=='moving':required.update(STAGE_REQUIREMENTS['prompthmr_camera_assets'])
         unavailable = [BY_KEY[key] for key in sorted(required) if not ready(BY_KEY[key])]
         count = len(required) - len(unavailable)
         text = f"{tool.label} required files ready: {count}/{len(required)}"
@@ -758,8 +689,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.auto_floor.setEnabled(not self.busy and flat)
         self.floor_height.setEnabled(not self.busy and flat and not self.auto_floor.isChecked())
         self.correction_button.setEnabled(not self.busy and not self.contact_saving and self.project is not None and
-            (result_is_current(self.project, 'initial') if tool.key=='gemx' else
-             (self.project/RESULTS[base_result(self.active_result)][0]).exists()))
+             (self.project/RESULTS[base_result(self.active_result)][0]).exists())
         self.slider.trim_enabled = not self.busy and self.info is not None
         self.slider.contact_edit_enabled=not self.busy and not self.contact_saving and self.motion_correction.isChecked() and self.slider.contacts_available
         self.slider.contact_track_enabled=(self.foot_lock.isChecked(),)*2+(self.hand_lock.isChecked(),)*2
@@ -776,21 +706,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.save_project_action.setEnabled(not self.busy and not self.contact_saving and self.video_path is not None and self.info is not None)
         self.mesh_button.setEnabled(self.preview_preparation_available())
         self.import_character_action.setEnabled(not self.busy and not self.contact_saving)
-        self.flow_sampling.setEnabled(not self.busy)
-        self.fast_sam.setEnabled(not self.busy and not self.flow_hamer.isChecked())
-        self.flow_hand_stride4.setEnabled(not self.busy and not self.flow_hamer.isChecked())
-        self.flow_hamer.setEnabled(not self.busy)
-        self.flow_acceleration.setVisible(self.fast_sam.isChecked())
-        self.flow_acceleration.setEnabled(not self.busy)
-        self.exmr_camera.setEnabled(not self.busy)
-        self.exmr_smoothing.setEnabled(not self.busy)
-        self.flowhmr_background.setEnabled(not self.busy)
-        self.exmr_background.setEnabled(not self.busy)
         self.analyze_button.setVisible(tool.key=='gvhmr')
         self.sync_correction_floor_preview()
-        self.sync_mamma_controls()
-        self.sync_prompthmr_controls()
-        self.sync_gemx_controls()
         if hasattr(self,'camera_tools'):self.camera_tools.sync()
 
     def sync_correction_floor_preview(self):
@@ -810,7 +727,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             dialog.deleteLater()
 
     def select_model(self, *_):
-        if self.pear_select_model():return
         tool = MOTION_TOOLS[self.model_choice.currentData()]
         if self.workspace_root is not None and not self._workspace_loading and tool.key!=getattr(self,'_selected_tool',None):
             if self.busy or self.contact_saving:
@@ -842,7 +758,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             if self.model_pages.widget(index).property("motion_tool") == tool.key:
                 self.model_pages.setCurrentIndex(index)
                 break
-        self.model_pages.setVisible(tool.key not in ('gvhmr', 'gemx'))
+        self.model_pages.setVisible(tool.key != 'gvhmr')
         self.htd_refine.setVisible(bool(tool.refinement))
         self.refine_description.setVisible(bool(tool.refinement))
         self.footmr_refine.setVisible(tool.key == "gvhmr")
@@ -857,7 +773,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.slider.update()
         self.correction_description.setText('Only checked contact types are corrected. Uses the selected '+tool.label+' result.')
         self.analyze_button.setToolTip(tooltip_text('Find body points in the video for GVHMR refinement. Reconstruct 3D normally includes this step when needed.'))
-        self.mamma_mode_changed(previous,tool.key)
         self.update_readiness()
 
     def selected_result(self, correction=None):
@@ -870,14 +785,13 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.set_active_result(self.selected_result())
 
     def source_export_available(self):
-        if self._pear_active or self.project is None:
+        if self.project is None:
             return False
         if self.people_state and any(person.get('takes') for person in self.people_state['people']):
             return True
         return self.current_export() is not None
 
     def current_export(self):
-        if self._pear_active:return None
         info=self.contact_tracks.get(base_result(self.active_result))
         if self.active_result.startswith('corrected_') and (self.contact_saving or (info and info.get('unsaved'))):return None
         # selected_export checks source, correction and target receipts itself.
@@ -887,24 +801,18 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
 
     def render_changed(self):
         self.motion_view.show_bones=self.bone_overlay.isChecked()
-        self.motion_view.show_faces=self.face_overlay.isChecked()
         self.motion_view.update()
         if hasattr(self,'camera_tools'):self.camera_tools.canvas.update()
 
     def preview_preparation_available(self):
-        if self.model_choice.currentData()=='gemx':return False
         if self.project is None or self.busy or self.contact_saving:return False
         if not (self.project/RESULTS[base_result(self.active_result)][0]).is_file():return False
         info=self.contact_tracks.get(base_result(self.active_result),{})
         if self.active_result.startswith('corrected_') and info.get('unsaved'):return False
-        if self.model_choice.currentData()=='flowhmr':
-            from .flow_placement import needs_update
-            if needs_update(self.project):return True
         return ((self.project/RESULTS[self.active_result][0]).is_file()
                 and result_is_current(self.project,self.active_result))
 
     def prepare_target_preview(self):
-        if self.model_choice.currentData()=='gemx':return
         if self.project is None or self.busy or self.contact_saving:return
         from .mixamo_data import current
         projects=[self.project]
@@ -914,9 +822,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 if person.get('checked') for take in person.get('takes',[])]
         jobs=[]
         for project in dict.fromkeys(projects):
-            from .flow_placement import needs_update
-            placement_old=self.model_choice.currentData()=='flowhmr' and needs_update(project)
-            if (project/RESULTS[base_result(self.active_result)][0]).is_file() and (placement_old or result_is_current(project,self.active_result) and not current(project,self.active_result)):
+            if (project/RESULTS[base_result(self.active_result)][0]).is_file() and result_is_current(project,self.active_result) and not current(project,self.active_result):
                 jobs.append(('rig',['--project',str(project),'--result',self.active_result]))
         if jobs:self.start_jobs(jobs)
 
@@ -950,25 +856,13 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.update_readiness()
 
     def choose_video(self):
-        if self._pear_active:
-            names,_=QFileDialog.getOpenFileNames(self,'Open PEAR Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
-            if names:self.load_pear_videos(names)
-            return
-        if self.model_choice.currentData()=='mamma':
-            names,_=QFileDialog.getOpenFileNames(self,'Open MAMMA Camera Videos','', 'Videos (*.mp4 *.mov *.avi *.mkv *.webm)')
-            if names:self.load_mamma_videos(names)
-            return
         name, _ = QFileDialog.getOpenFileName(self, "Open Video", "", "Videos (*.mp4 *.mov *.avi *.mkv *.webm)")
         if name:
             self.load_video(Path(name))
 
     def load_video(self, path):
-        if self._pear_active:return self.load_pear_videos([path])
-        if self.model_choice.currentData()=='mamma':
-            return self.load_mamma_videos([path])
         try:
             if self.workspace_root is not None:self.remember_workspace_model()
-            self.clear_mamma_inputs()
             self.workspace_root=None;self._workspace_video_reference=False;self._workspace_camera=None
             self.stop_playback()
             self.clear_preview()
@@ -1001,9 +895,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             QMessageBox.warning(self, "Video Error", str(error))
 
     def video_ready(self, info):
-        if self.pear_restore_media_ready():return
-        if self.pear_video_ready(info):return
-        if self.mamma_video_ready(info):return
         self.video_readable = True
         self.slider.set_media(self.info["fps"] if self.info else info["fps"])
         if self.project is None and not self._workspace_video_reference:
@@ -1038,15 +929,11 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 root=root_for(project)
                 if root is None:
                     raise ValueError('This project uses the previous folder format. Open its video to create a new model-folder project.')
-                if self.load_project(project) and project!=root:
-                    self.restore_track_face(self.saved_track_face(read(root).get('view',{})))
+                self.load_project(project)
             except (OSError,ValueError,KeyError) as error:self.status.setText('Cannot open project: '+str(error))
 
     @batch_readiness
     def load_project(self, project, *, keep_current_options=False):
-        if self._pear_active:
-            self.pear_leave()
-            self.model_choice.blockSignals(True);self.model_choice.setCurrentIndex(self.model_choice.findData(self._selected_tool));self.model_choice.blockSignals(False)
         from .project_workspace import is_workspace
         if is_workspace(project):return self.open_workspace(project)
         from .project_storage import project_to_open, source_video
@@ -1063,16 +950,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
         self._rife_source_fps = float(manifest.get('source', {}).get('fps') or 0)
         self.rife_interpolation.setChecked(bool(manifest.get('interpolation')))
-        if manifest.get('pipeline',{}).get('model')=='prompthmr':
-            group=(project/manifest.get('people_root','.')).resolve()
-            if (group/'prompthmr_pending.json').exists():
-                self.status.setText('PromptHMR publication is incomplete. Reconstruct again; previous projects were preserved.');return False
-            self.restore_prompthmr_options(manifest.get('prompthmr_options',{}))
-        if manifest.get('pipeline',{}).get('model')=='mamma':
-            group=(project/manifest.get('people_root','.')).resolve()
-            if (group/'mamma_pending.json').exists():
-                self.status.setText('MAMMA publication is incomplete. Reconstruct again to finish; previous projects were preserved.')
-                return False
         self.stop_playback()
         self.clear_preview()
         self.motion_view.auto_fit = True
@@ -1086,20 +963,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         pipeline = manifest.get("pipeline", {})
         pending_result = (self.selected_result() if keep_current_options and
                           pipeline.get('model', 'gvhmr') == self._selected_tool else None)
-        from .flow_camera import saved_interval
-        from .flow_sam import saved_options
-        flow=saved_options(project,manifest)
-        self.flow_hamer.setChecked(False)
-        self.fast_sam.setChecked(flow['fast_sam'])
-        self.flow_batch4.setChecked(flow['sam_batch4'])
-        self.flow_gpu_crop.setChecked(flow['sam_gpu_crop'])
-        self.flow_hand_stride4.setChecked(flow['sam_hand_stride4'])
-        self.flow_hamer.setChecked(flow['hamer'])
-        from .exmr_options import saved as saved_exmr
-        exmr=saved_exmr(project,manifest)
-        self.exmr_camera.setCurrentIndex(self.exmr_camera.findData(exmr['static_camera']))
-        self.exmr_smoothing.setChecked(exmr['smoothing']=='global')
-        self.flow_sampling.setCurrentIndex(max(0,self.flow_sampling.findData(saved_interval(project,manifest))))
         self.model_choice.blockSignals(True)
         self.model_choice.setCurrentIndex(self.model_choice.findData(pipeline.get('model','gvhmr')))
         self.model_choice.blockSignals(False)
@@ -1135,10 +998,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.info = {"fps": fps, "frames": manifest["frames"], "duration": manifest["frames"] / fps}
         self.source_offset, self.source_end = manifest["start"], manifest["end"]
         self.slider.set_media(fps)
-        # MAMMA restores its selected camera below. Opening the actor's default
-        # clip first discards that decoder and its cache on every row selection.
-        if not (pipeline.get('model')=='mamma' and self.mamma_inputs and self.mamma_thumbnail_buttons):
-            self.video_view.open(select_preview(project), (manifest["width"], manifest["height"]))
+        self.video_view.open(select_preview(project), (manifest["width"], manifest["height"]))
         self.slider.setRange(0, manifest["frames"] - 1)
         self.filename.setText(f"{self.video_path.name}  ·  Project loaded  ·  {manifest['frames']} frames")
         self.slider.reset_trim()
@@ -1159,15 +1019,9 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.slider.setValue(max(0,min(int(workspace.get('frame',0)),manifest['frames']-1)))
             self.seek(self.slider.value())
         self.update_readiness()
-        self.mamma_project_loaded(project,manifest)
-        if workspace is not None:
-            self.restore_track_face(workspace.get('track_face',False))
-        else:
-            self.update_face_overlay()
         return True
 
     def seek(self, index):
-        self.pear_seek(index)
         self.frame_number.blockSignals(True)
         self.frame_number.setValue(index + 1)
         self.frame_number.blockSignals(False)
@@ -1197,8 +1051,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.clip_label.setText("Clip: no video")
 
     def present_frame(self, index):
-        if self._pear_active:
-            self.pear_submit();return
         # 3D and overlays advance only when the corresponding decoded image is ready.
         self.motion_view.index = index
         self.motion_view.scene_time=self.source_offset+index/(self.info['fps'] if self.info else 30)
@@ -1231,7 +1083,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.preview_audio.pause()
         self.timer_resolution.release()
         self.set_playback_indicator(False)
-        self.pear_playback_stopped()
 
     def set_playback_indicator(self, playing):
         label = "Pause" if playing else "Play"
@@ -1240,12 +1091,10 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.play_button.setAccessibleName(label)
 
     def step_frames(self, amount):
-        if self._pear_active and self.pear_using_webcams():return
         self.stop_playback()
         self.slider.setValue(max(0, min(self.slider.maximum(), self.slider.value() + amount)))
 
     def toggle_play(self):
-        if self._pear_active and self.pear_using_webcams():return
         if self.timer.isActive():
             self.stop_playback()
         elif self.video_path and self.info and self.video_readable:
@@ -1292,11 +1141,9 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.timer.start(max(1, math.ceil(remaining * 1000)))
 
     def shutdown_preview(self):
-        self.close_face_playback()
         self._stream_timer.stop()
         self.close_stream()
         if hasattr(self,'camera_tools'):self.camera_tools.close()
-        self.shutdown_mamma()
         self.stop_playback()
         if self.preview_audio is not None:
             self.preview_audio.close()
@@ -1324,16 +1171,13 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         super().hideEvent(event)
 
     def input_jobs(self, stages, result=None, *, people_options=None):
-        if MOTION_TOOLS[self.model_choice.currentData()].input_setup_only:
-            self.status.setText('MAMMA camera input setup is available; reconstruction is not integrated yet.')
-            return
         if self.video_path is None:
             self.choose_video()
             return
         if self.info is None or not self.video_readable:
             self.status.setText("Wait for the video preview to finish opening.")
             return
-        discovery = any(stage in ('people', 'sam31_people') for stage in stages)
+        discovery = any(stage in ('people',) for stage in stages)
         if not discovery and self._single_actor and not self._single_actor['checked']:
             self.status.setText('Check Person 1 in the People list to reconstruct it.')
             return
@@ -1347,11 +1191,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 return
         if not self.ready_for_interpolation(interpolation):
             return
-        unavailable = [model for stage in stages for model in ([] if self.model_choice.currentData()=='flowhmr' and stage=='flow_camera' and self.flow_sampling.currentData()==-1 else missing('flow_export' if self.model_choice.currentData()=='flowhmr' and stage in ('correct','export') else stage))]
-        if 'sam31_people' not in stages and self.model_choice.currentData()=='flowhmr' and self.flow_hamer.isChecked():
-            from .flow_hamer import MODEL_KEYS
-            from .models import BY_KEY
-            unavailable += [BY_KEY[k] for k in MODEL_KEYS if not ready(BY_KEY[k])]
+        unavailable = [model for stage in stages for model in missing(stage)]
         if unavailable:
             names = ", ".join(dict.fromkeys(model.name for model in unavailable))
             self.status.setText(f"Prepare these models first: {names}")
@@ -1381,9 +1221,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         jobs = [('prepare', prepare_args)]
         for stage in stages:
             arguments = None
-            if stage == 'sam31_people':
-                arguments = people_options
-            elif stage in {'export', 'flow_export', 'footmr', 'handflow', 'correct'} and result:
+            if stage in {'export', 'footmr', 'handflow', 'correct'} and result:
                 arguments = ['--result', result]
             jobs.append((stage, arguments))
         self.start_jobs(jobs)
@@ -1393,19 +1231,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
 
     def run_full(self):
         tool = MOTION_TOOLS[self.model_choice.currentData()]
-        if tool.key=='mamma':return self.run_mamma()
-        if tool.key=='prompthmr':return self.run_prompthmr()
-        if tool.key=='gemx':return self.run_gemx()
-        if tool.key=='exmr' and self.people_root is not None:
-            from .storage import atomic_json
-            path=self.people_root/'project.json';state=json.loads(path.read_text(encoding='utf-8'))
-            state['exmr_options']={'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'}
-            atomic_json(path,state)
-        if tool.key=='flowhmr' and self.people_root is not None:
-            from .storage import atomic_json
-            path=self.people_root/'project.json';state=json.loads(path.read_text(encoding='utf-8'))
-            state['flow_options']={**state.get('flow_options',{}),**self.selected_flow_options()}
-            atomic_json(path,state)
         refine = bool(tool.refinement) and self.htd_refine.isChecked()
         foot = tool.key=='gvhmr' and self.footmr_refine.isChecked()
         correction=self.motion_correction.isChecked()
@@ -1479,9 +1304,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.status.setText('Contact-lock timing was not saved. Edit or reset the tracks to retry saving.');return
         self.save_correction_options()
         kind=self.selected_result(True)
-        if self.model_choice.currentData()=='gemx':
-            self.start_jobs([('gemx_correct',['--project',str(self.project),'--result',kind])], refresh_characters=True)
-            return
         self.set_active_result(kind)
         if self.people_root is not None:
             self.apply_scene_correction(kind);return
@@ -1601,19 +1423,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 self._task_manifests[project]=state
             state=self._task_manifests[project];tool=state.get('pipeline',{}).get('model',tool)
             estimate=state.get('stages',{}).get(stage,{}).get('elapsed')
-            if stage.startswith('exmr'):
-                try:
-                    file=project/(stage+'_receipt.json')
-                    if file.stat().st_size<=65536:estimate=json.loads(file.read_text(encoding='utf-8')).get('elapsed')
-                except (OSError,ValueError):pass
         frames=state.get('frames',self.info.get('frames',0) if self.info else 0)
         if '--first-frame' in arguments and '--end-frame' in arguments:
             frames=int(arguments[arguments.index('--end-frame')+1])-int(arguments[arguments.index('--first-frame')+1])
         model=arguments[arguments.index('--model')+1] if '--model' in arguments else ''
         result=arguments[arguments.index('--result')+1] if '--result' in arguments else self.active_result
-        key=(stage,tool,frames,model,result,self.compute_mode.currentData(),self.fast_sam.isChecked(),self.flow_batch4.isChecked(),self.flow_gpu_crop.isChecked(),self.flow_hand_stride4.isChecked(),self.flow_hamer.isChecked(),self.flow_sampling.currentData(),self.exmr_camera.currentData())
+        key=(stage,tool,frames,model,result,self.compute_mode.currentData())
         if not isinstance(estimate,(int,float)) or not math.isfinite(estimate) or not 1<=estimate<=7*86400:estimate=None
-        if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
+        if stage in ('gvhmr_batch',):
             from .queue_groups import argument
             items=json.loads(argument(arguments,'--batch-items'))
             key=(*key,argument(arguments,'--batch-phase'),tuple((item['project'],item['result']) for item in items),len(items))
@@ -1645,13 +1462,12 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.guard_timer.stop()
         self.processing_guard = None
         if not self.jobs and not self.failed and not self.cancelled:
-            if self.current_stage in ('export', 'flow_export') and self.project is not None and not self._people_batch:
+            if self.current_stage == 'export' and self.project is not None and not self._people_batch:
                 try:
-                    metadata = json.loads((self.project / 'export.json').read_text(encoding='utf-8'))
+                    metadata = json.loads((self.project / 'export.json').read_text(encoding="utf-8"))
                     self.set_active_result(metadata.get('result_kind', 'refined'))
                 except (OSError, ValueError, KeyError) as error:
                     self.worker_completion_error(error)
-            self.queue_face_after_reconstruction()
         if not self.jobs or self.failed or self.cancelled:
             self.task_timer.stop()
             elapsed = (max(0., time.monotonic() - self._batch_started_at)
@@ -1693,7 +1509,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                     self.status.setText("Downloads complete. Check Model Manager for any required imports.")
                 elif self.current_stage == "import_model":
                     self.status.setText("Model setup complete.")
-                elif self.current_stage not in ('people','sam31_people','person'):
+                elif self.current_stage not in ('people','person'):
                     self.status.setText("Complete. Play the result or open the project folder.")
                 if self._batch_has_motion and elapsed is not None:
                     seconds = round(elapsed)
@@ -1713,16 +1529,14 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         from .queue_groups import join_single_pipeline
         self.jobs = join_single_pipeline(self.jobs, self.project)
         stage, arguments = self.jobs.pop(0)
-        if stage in {'gvhmr', 'refine', 'footmr', 'handflow', 'correct',
-                     'flow_camera', 'flow_features', 'flowhmr',
-                     'exmr_preprocess', 'exmr_features', 'exmr'}:
+        if stage in {'gvhmr', 'refine', 'footmr', 'handflow', 'correct'}:
             self._batch_has_motion = True
-        if stage.startswith(('mamma_','prompthmr_')) or stage in ('flow_batch','exmr_batch','gvhmr_batch','gemx_reconstruct'):self._batch_has_motion=True
+        if stage in ('gvhmr_batch',):self._batch_has_motion=True
         self.current_stage = stage
         self._batch_inner_stage=stage
         if arguments is None:
             arguments = ["--project", str(self.project)]
-        elif stage in {"export", "footmr", "handflow", "correct", 'flow_export', 'sam31_people'} and "--project" not in arguments:
+        elif stage in {"export", "footmr", "handflow", "correct"} and "--project" not in arguments:
             arguments = ["--project", str(self.project), *arguments]
         self.job_project = Path(arguments[arguments.index('--project')+1]) if '--project' in arguments else None
         if stage=='track':self.begin_single_tracking(self.job_project)
@@ -1744,7 +1558,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self._stdout_decoder = codecs.getincrementaldecoder("utf-8")("replace")
         self._stderr_decoder = codecs.getincrementaldecoder("utf-8")("replace")
         self._stderr_buffer = ""
-        if stage in ('flow_batch','exmr_batch','gvhmr_batch'):
+        if stage in ('gvhmr_batch',):
             from .queue_groups import write_request
             try:
                 self._batch_request=write_request(stage,arguments)
@@ -1752,8 +1566,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 self.failed=True;self.log.append(str(error));self.status.setText('Cannot prepare people processing: '+str(error))
                 self.next_job();return
             arguments=['--request',str(self._batch_request),'--project',str(self.job_project)]
-        if stage=='gemx_reconstruct':
-            self._batch_request=Path(arguments[arguments.index('--request')+1])
         try:
             command = worker_command(stage, *arguments)
         except (OSError, ValueError, RuntimeError) as error:
@@ -1770,13 +1582,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         environment.insert("PYTHONUNBUFFERED", "1")
         environment.insert("RGB_MOCAP_COMPUTE_MODE", self.compute_mode.currentData())
         environment.insert('RGB_MOCAP_RESOURCE_SAFETY','1' if self._job_resource_safety else '0')
-        environment.insert('RGB_MOCAP_FLOW_INTERVAL',str(self.flow_sampling.currentData()))
-        environment.insert('RGB_MOCAP_FLOW_FAST_SAM','1' if self.fast_sam.isChecked() else '0')
-        environment.insert('RGB_MOCAP_FLOW_BATCH4','1' if self.flow_batch4.isChecked() else '0')
-        environment.insert('RGB_MOCAP_FLOW_GPU_CROP','1' if self.flow_gpu_crop.isChecked() else '0')
-        environment.insert('RGB_MOCAP_FLOW_HAND_STRIDE4','1' if self.flow_hand_stride4.isChecked() else '0')
-        environment.insert('RGB_MOCAP_FLOW_HAMER','1' if self.flow_hamer.isChecked() else '0')
-        environment.insert('RGB_MOCAP_EXMR_OPTIONS',json.dumps({'static_camera':self.exmr_camera.currentData(),'smoothing':'global' if self.exmr_smoothing.isChecked() else 'none'}))
         self.process.setProcessEnvironment(environment)
         self.process.readyReadStandardOutput.connect(self.read_stdout)
         self.process.readyReadStandardError.connect(self.read_stderr)
@@ -1867,15 +1672,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.task_state.update(dict(current=0,total=0,phase=f"batch:{event['phase']}:{event['index']}",message='Loading actor data'),time.monotonic())
             self.status.setText(self._task_actor+' · '+STAGES.get(event['stage'],event['stage']))
             self.update_task_progress()
-        elif kind == 'face_ready':
-            self.update_face_overlay(refresh=True)
-        elif kind == 'gemx_corrected':
-            if self.project == Path(event['project']):
-                self.set_active_result('corrected_initial')
-        elif kind in ('mamma_ready','prompthmr_ready','gemx_ready'):
-            self.workspace_root=Path(event['root'])
-            self.load_project(Path(event['project']), keep_current_options=True)
-            self.set_active_result(event['result'])
         elif kind == "prepared":
             self._task_preparing=False
             self._task_manifests={}
@@ -1909,7 +1705,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         elif kind in {"failed", "blocked"}:
             self.failed = True
             self.task_timer.stop();self.task_info.setText('Failed')
-            label = 'Face tracking failed. ' if self.current_stage == 'face_track' else 'Processing failed. '
+            label = 'Processing failed. '
             self.status.setText(label + event.get('message', 'See the console for details.'))
             self.log.append(self.status.text())
         elif kind == "complete":
@@ -1966,10 +1762,8 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             self.update_readiness()
 
     def cancel_job(self):
-        self.pear_leave()
         self._stream_timer.stop()
         self.close_stream()
-        self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();return
         if self.current_stage=='save_project' and getattr(self,'_project_save_request',None):
@@ -2012,7 +1806,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.status.setText("Cancelled. Completed stages will be reused next time.")
 
     def refresh_results(self):
-        self.update_face_overlay()
         if self.project:
             signature = project_signature(self.project)
             if signature != self.preview_signature:
@@ -2022,10 +1815,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 self.apply_preview()
 
     def clear_preview(self):
-        self._face_overlay_key=None
-        self.motion_view.face_archive=None
-        self.motion_view.face_surfaces.clear()
-        self.motion_view.face_manifests.clear()
         self.preview_help.setText('')
         self.pelvis_auto_note.setText('Automatic lowering varies by frame.')
         self.data_loader.cancel()
@@ -2082,9 +1871,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.video_view.set_observations(data.arrays)
         display_kind=self.active_result
         corrected=display_kind.startswith('corrected_')
-        native_soma=self.model_choice.currentData()=='gemx'
-        if native_soma and corrected and (display_kind+'_joints' not in data.arrays or not result_is_current(self.project, display_kind, ignore_contacts=True)):
-            display_kind='initial'
         name = display_kind + "_joints"
         from .result_artifacts import artifacts_current
         coherent=artifacts_current(self.project,display_kind)
@@ -2093,9 +1879,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         available = name in data.arrays and (current or pending)
         self.correction_note.hide()
         self.refine_preview_note.hide()
-        if native_soma and display_kind != self.active_result:
-            self.correction_note.setText('Showing original SOMA motion. Use Apply Correction to update it.')
-            self.correction_note.show()
         if not available:
             result = {"initial":MOTION_TOOLS[self.model_choice.currentData()].label, "refined":"HTD", "footmr_initial":"FootMR", "footmr_refined":"HTD + FootMR"}[body_result(self.active_result)]
             if has_handflow(self.active_result):result += " + HandFlow"
@@ -2120,17 +1903,15 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         if available and warning:
             self.correction_note.setText(warning);self.correction_note.show()
         if available and pending:
-            message = ('Correction settings or contact timing changed. Preview shows the last applied correction.\nApply Correction to update the SOMA bones and surface.'
-                       if native_soma else 'Contact-lock timing changed. Preview shows the last applied correction.\nApply Correction to update the motion and FBX.')
-            self.correction_note.setText(message);self.correction_note.show()
+            self.correction_note.setText('Contact-lock timing changed. Preview shows the last applied correction.\nApply Correction to update the motion and FBX.')
+            self.correction_note.show()
         self.slider.has_motion = available
         self.slider.update()
         overlay_name=display_kind+'_joints'
         overlay_current=artifacts_current(self.project,display_kind) and result_is_current(self.project,display_kind,ignore_contacts=True)
         overlay_available=overlay_current and overlay_name in data.arrays
         from .bone_overlay import preview_current
-        target_current=overlay_available and (display_kind in data.target_assets if native_soma else
-            preview_current(self.project,self.active_result,data.target_info.get(self.active_result)))
+        target_current=overlay_available and preview_current(self.project,self.active_result,data.target_info.get(self.active_result))
         camera_name=name if available else overlay_name
         rig_points=data.arrays.get(camera_name)
         # Source pose is the comparison reference. Never deform this surface
@@ -2148,10 +1929,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         self.motion_view.raw_asset=None
         self.motion_view.native_vertices=None
         self.motion_view.native_required=False
-        if native_soma or self.model_choice.currentData()=='flowhmr':
-            self.motion_view.raw_asset=self.motion_view.target_asset
-            self.motion_view.native_vertices=data.arrays.get(display_kind+'_native') if target_current else None
-            self.motion_view.native_required=True
         info=data.target_info.get(self.active_result,{})
         warning=info.get('correction',{}).get('warning','')
         source_warning=data.summaries.get(name,{}).get('correction_warning','') if corrected else ''
@@ -2176,14 +1953,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
         elbow_offset=max((fitted.get(side+'ForeArm',fitted.get('mixamorig:'+side+'ForeArm',{})).get('max_m',0.) for side in ('Left','Right')),default=0.)
         if elbow_offset>.08:
             notices.append(f'Elbow pose differs from AI source (up to {elbow_offset*100:.1f} cm) after anatomical alignment.')
-        if self.model_choice.currentData()=='flowhmr':
-            from .flow_placement import needs_update
-            if needs_update(self.project):notices.append('FlowHMR scene placement needs updating. Use Prepare Preview; no AI inference is required.')
-            knee_offset=max((fitted.get(side+'Leg',{}).get('max_m',0.) for side in ('Left','Right')),default=0.)
-            if knee_offset>.08:notices.append(f'Knee pose differs from AI source (up to {knee_offset*100:.1f} cm) after anatomical alignment.')
-        if native_soma:
-            help_text='Native SOMA surface and 77-bone overlay.'
-        self.bone_overlay.setToolTip(tooltip_text(help_text if native_soma else 'Show the skeleton used for FBX export. Display only.\n'
+        self.bone_overlay.setToolTip(tooltip_text('Show the skeleton used for FBX export. Display only.\n'
             'In Blender, use Scale 1 and leave Automatic Bone Orientation off to keep its axes.\n'+help_text))
         if available and pending:notices.append('Contact-lock timing changed. Preview shows the last applied correction. Apply Correction to update the motion and FBX.')
         if corrected and available and not pending and not result_is_current(self.project,self.active_result):notices.append('The last applied correction is outdated or unavailable. Apply Correction before export.')
@@ -2285,9 +2055,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
                 row=dict(project=str(project),kind=kind,source=str(source),target=str(target))
                 row['rig_name']=self.export_person_name(project)
                 row['prepend_tpose']=options.get('prepend_tpose',False)
-                row['export_face']=options.get('export_face',False)
-                row['face_format']=options.get('face_format','txt')
-                row['smooth_face']=options.get('smooth_face',False)
                 row['bvh_profile']=getattr(self,'_source_export_options',{}).get('bvh_profile','generic')
                 if compatible:row['fbx_compatibility']=True
                 if fmt == 'fbx':
@@ -2349,9 +2116,7 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
     def dropEvent(self, event):
         urls = event.mimeData().urls()
         if urls and not self.busy:
-            if self._pear_active:self.load_pear_videos([Path(url.toLocalFile()) for url in urls])
-            elif self.model_choice.currentData()=='mamma':self.load_mamma_videos([Path(url.toLocalFile()) for url in urls])
-            else:self.load_video(Path(urls[0].toLocalFile()))
+            self.load_video(Path(urls[0].toLocalFile()))
 
     def closeEvent(self, event):
         if getattr(self, '_preview_export', None) is not None:
@@ -2367,8 +2132,6 @@ class MainWindow(PreviewExportWorkspace,PearWorkspace,GemXWorkspace,PromptHMRWor
             worker = self.process
             if worker:
                 worker.waitForFinished(3000)
-        self.pear_leave()
-        self.pear_stop_scan()
         if self.character_process is not None:
             self.cancel_character();self.character_process.waitForFinished(5000)
         self.character_loader.close()

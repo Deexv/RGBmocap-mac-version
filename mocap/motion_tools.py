@@ -23,12 +23,7 @@ class MotionTool:
                 *(("correct",) if correction else ()), "export"]
 
 
-MOTION_TOOLS = {"pear": MotionTool("pear", "PEAR · Live (Experimental)", (), live=True),"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine")),
-                "flowhmr": MotionTool("flowhmr", "FlowHMR", ("track", "flow_camera", "flow_features", "flowhmr")),
-                "exmr": MotionTool("exmr", "ExMR", ("track", "exmr_preprocess", "exmr_features", "exmr")),
-                "mamma": MotionTool("mamma", "MAMMA", ("mamma_prepare","mamma_masks","mamma_landmarks","mamma_camera","mamma_fit","mamma_publish")),
-                "prompthmr": MotionTool("prompthmr", "PromptHMR", ("prompthmr_prepare","prompthmr_track","prompthmr_pose","prompthmr_world","prompthmr_publish")),
-                "gemx": MotionTool("gemx", "GEM-X", ("gemx_reconstruct",))}
+MOTION_TOOLS = {"gvhmr": MotionTool("gvhmr", "GVHMR", ("track", "gvhmr"), ("pva", "refine"))}
 
 
 class UnsupportedMotionTool(ValueError):
@@ -104,9 +99,9 @@ def result_is_current(project, kind, ignore_contacts=False):
     except (OSError, ValueError, TypeError, KeyError):
         return False
     if tool.key == 'gemx':
-        from .gemx_result import current
+        current = None
         if kind == 'initial':return current(project)
-        from .gemx_correct import KIND, selected
+        KIND, selected = None, None
         return kind == KIND and selected(project, ignore_contacts=ignore_contacts, ignore_options=ignore_contacts) is not None
     if (project/'exmr_pending.json').exists():return False
     if (project/'exmr_receipt.json').exists():
@@ -125,7 +120,7 @@ def result_is_current(project, kind, ignore_contacts=False):
         except (OSError,ValueError,KeyError,TypeError):return False
     if (project/'flow_world_pending.json').exists():return False
     if (project/'flow_world.json').exists():
-        from .flow_placement import current as placement_current
+        placement_current = None
         if not placement_current(project):return False
     metadata = project / f"{kind}_sources.json"
     if has_handflow(kind) and not kind.startswith('corrected_'):
@@ -187,14 +182,14 @@ def resolve_motion_result(project, result="auto"):
 
 def selected_export(project, kind):
     """Only the target rig shown by Mixamo mode may be exported."""
-    from .gemx_result import RECEIPT, is_project
+    RECEIPT, is_project = None, (lambda project: False)
     if is_project(project):
-        from .gemx_correct import RECORD
+        RECORD = None
         return project / (RECEIPT if kind == 'initial' else RECORD) if result_is_current(project, kind) else None
     from .mixamo_data import current
     from .result_artifacts import artifacts_current
     if (project/'flow_prediction.pt').exists():
-        from .flow_placement import current as placement_current
+        placement_current = None
         if not placement_current(project):return None
     if not artifacts_current(project,kind):return None
     if current(project,kind) and result_is_current(project,kind):
@@ -207,7 +202,7 @@ def legacy_export(project, kind):
     """Internal compatibility access; never exposed as a Mixamo export."""
     from .result_artifacts import artifacts_current
     if (project/'flow_prediction.pt').exists():
-        from .flow_placement import current as placement_current
+        placement_current = None
         if not placement_current(project):return None
     if not artifacts_current(project,kind):return None
     path = project / f"{kind}_motion.bvh"

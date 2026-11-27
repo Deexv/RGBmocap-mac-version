@@ -53,7 +53,7 @@ def fingerprint(stage, project, result="auto", _worker_hash=None, _legacy_routin
             inputs[stage]+=[RESULTS[kind][0] for kind in result_sources(body_result(selected))]
         elif result_options(selected)[0]:
             inputs[stage].append("opt_results.pt")
-    sources = [Path(__file__), Path(__file__).with_name("engines.py"), Path(__file__).with_name("export.py"), Path(__file__).with_name("mesh_data.py"), ROOT / "requirements-windows.txt",Path(__file__).with_name('compute_policy.py')]
+    sources = [Path(__file__), Path(__file__).with_name("engines.py"), Path(__file__).with_name("export.py"), Path(__file__).with_name("mesh_data.py"), Path(__file__).with_name('compute_policy.py')]
     if stage in ('track','pva','features','gvhmr','refine','footmr','handflow'):
         sources.append(Path(__file__).with_name('memory_mode.py'))
     if stage == "footmr":
@@ -61,7 +61,7 @@ def fingerprint(stage, project, result="auto", _worker_hash=None, _legacy_routin
         sources.append(ROOT / "third_party/FootMR/hmr4d/utils/preproc/vitpose_pytorch/src/vitpose_infer/model_builder.py")
     if stage=='handflow':
         sources.extend(Path(__file__).with_name(n) for n in ('handflow.py','handflow_engine.py','hand_pose.py'))
-        sources.extend([ROOT/'third_party/HandFlow/utils/inference_utils.py',ROOT/'requirements-hand-windows.txt'])
+        sources.extend([ROOT/'third_party/HandFlow/utils/inference_utils.py',Path(__file__).with_name('hand_pose.py')])
     if stage == "correct":
         sources.append(Path(__file__).with_name('correction.py'))
         sources.append(Path(__file__).with_name('contact_trajectory.py'))
@@ -133,7 +133,7 @@ def emit(kind: str, **data) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("stage", choices=["diagnose", "prepare", "download", "import_model", "mesh", "rig", "save_fbx", "track", "pva", "features", "gvhmr", "refine", "footmr", "handflow", "correct", "export", "people", "person", 'flow_camera','flow_features','flowhmr','flow_export','exmr_preprocess','exmr_features','exmr'])
+    parser.add_argument("stage", choices=["diagnose", "prepare", "download", "import_model", "mesh", "rig", "save_fbx", "track", "pva", "features", "gvhmr", "refine", "footmr", "handflow", "correct", "export", "people", "person"])
     parser.add_argument("--project", type=Path)
     parser.add_argument("--video", type=Path)
     parser.add_argument("--start", type=float, default=0)
@@ -177,13 +177,10 @@ def main() -> int:
                               motion_tool=args.motion_tool or 'gvhmr', project=args.project,
                               rife=args.rife_interpolation, emit=emit)
             manifest = json.loads((project / "project.json").read_text(encoding="utf-8"))
-            if args.motion_tool=='flowhmr':
+            if False:
                 manifest['flow_options']={**manifest.get('flow_options',{}),'camera_interval':int(os.environ.get('RGB_MOCAP_FLOW_INTERVAL','0')),'fast_sam':os.environ.get('RGB_MOCAP_FLOW_FAST_SAM','1')=='1','sam_batch4':os.environ.get('RGB_MOCAP_FLOW_BATCH4','1')=='1','sam_gpu_crop':os.environ.get('RGB_MOCAP_FLOW_GPU_CROP','1')=='1','sam_hand_stride4':os.environ.get('RGB_MOCAP_FLOW_HAND_STRIDE4','1')=='1'}
                 manifest['flow_options']['hamer']=os.environ.get('RGB_MOCAP_FLOW_HAMER','0')=='1'
                 if manifest['flow_options']['hamer']:manifest['flow_options'].update(fast_sam=True,sam_hand_stride4=True)
-            if args.motion_tool=='exmr':
-                from .exmr_options import options
-                manifest['exmr_options']=options(json.loads(os.environ.get('RGB_MOCAP_EXMR_OPTIONS','{}')))
             if args.motion_tool:
                 manifest.setdefault('pipeline',{})['model']=args.motion_tool
             if args.result != "auto":
@@ -212,29 +209,6 @@ def main() -> int:
             return 0
         project = args.project.resolve()
         require_supported_project(project)
-        if require_supported_project(project).key=='exmr' and args.stage not in ('exmr_preprocess','exmr_features','exmr','people','person','track','rig','mesh','export','correct'):
-            raise ValueError('This stage is not compatible with ExMR. Its original prediction has been preserved.')
-        if require_supported_project(project).key=='exmr' and args.stage.startswith('exmr'):
-            from .exmr_backend import run_stage
-            run_stage(project,args.stage,args.result,emit,force=args.force)
-            return 0
-        if require_supported_project(project).key=='flowhmr' and args.stage not in ('people','person','track'):
-            from .flow_backend import run_stage
-            run_stage(project,args.stage,args.result,emit,force=args.force)
-            return 0
-        if require_supported_project(project).key in ('mamma','prompthmr'):
-            if args.stage=='export':
-                from .export import export_project
-                output=export_project(project,args.result)
-            elif args.stage=='correct':
-                from .correction import run as correct_mamma
-                correct_mamma(project,emit,args.result);output=project/RESULTS[args.result][0]
-            elif args.stage in ('mesh','rig'):
-                from .export import export_project
-                output=export_project(project,args.result)
-            else:raise ValueError('Use this model\'s dedicated reconstruction pipeline; generic inference stages cannot process this project.')
-            emit('complete',stage=args.stage,output=str(output),cached=False,elapsed=time.monotonic()-started)
-            return 0
         if args.stage == 'rig':
             from .mixamo_data import prepare
             kind=resolve_motion_result(project,args.result)
@@ -253,7 +227,7 @@ def main() -> int:
             metadata=json.loads(export_path.read_text(encoding='utf-8')) if export_path.exists() else {}
             metadata.update(format='BVH',skeleton='Humanoid52',joints=target['names'],result_kind=kind,frames=target['frames'],fps=target['fps'],
                 length_unit='meter',up_axis='Y',rotation_order=target.get('export_bind',{}).get('rotation_order_default','ZXY'),
-                finger_motion='ExMR native finger inference' if require_supported_project(project).key=='exmr' else 'HandFlow finger inference; body and wrists preserved' if has_handflow(kind) else 'Source relaxed pose animated relative to open bind; finger inference is not enabled',bind_pose=target.get('export_bind',{}))
+                finger_motion='HandFlow finger inference; body and wrists preserved' if has_handflow(kind) else 'Source relaxed pose animated relative to open bind; finger inference is not enabled',bind_pose=target.get('export_bind',{}))
             atomic_json(export_path,metadata)
             from .process_memory import peak_ram_bytes
             emit('complete',stage='rig',output=str(result),cached=False,elapsed=time.monotonic()-started,

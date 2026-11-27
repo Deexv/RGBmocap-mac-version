@@ -77,7 +77,7 @@ def correction_reason(project, kind):
 
 
 def diagnose_take(project, kind, pending_contacts=False):
-    from .gemx_result import is_project
+    is_project = lambda project: False
     from .result_artifacts import artifacts_current, pending_path
 
     if pending_contacts:
@@ -101,7 +101,7 @@ def diagnose_take(project, kind, pending_contacts=False):
         return TakeIssue('Reconstruct 3D', 'The take has body motion, but the selected refinement result is missing.',
                          'Choose an available motion result or run Reconstruct 3D with the intended refinement options.')
     if (project/'flow_prediction.pt').is_file():
-        from .flow_placement import needs_update
+        needs_update = lambda project: False
         if needs_update(project):
             reason=('A previous FlowHMR placement update did not finish.' if (project/'flow_world_pending.json').is_file()
                     else 'The saved FlowHMR placement no longer matches its camera or motion inputs.')

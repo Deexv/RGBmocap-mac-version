@@ -175,7 +175,7 @@ class SceneDataLoader(QThread):
         from .motion_tools import base_result, require_supported_project
         require_supported_project(root)
         if require_supported_project(root).key=='flowhmr':
-            from .flow_scene import load_scene
+            load_scene = None
             return load_scene(root,kind,cancelled)
         if psutil.virtual_memory().available<256*1024**2:
             raise MemoryError('Free at least 256 MiB RAM to open a shared people scene.')
