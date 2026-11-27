@@ -39,7 +39,6 @@ __pycache__/
 /character_scenes/
 /artifacts/
 /experiments/
-/tests/
 /config/local.json
 *.pt
 *.pth
@@ -54,6 +53,7 @@ __pycache__/
 !/docs/samples/character-retargeting.mp4
 !/docs/samples/multi-cam-mocap.mp4
 !/docs/samples/streaming-to-blender.mp4
+!/docs/media/rgbmocap-demo.mp4
 *.avi
 *.mov
 *.mkv
@@ -110,4 +110,5 @@ third_party/**/.git/
 
 # Local temporary shader/kernel caches
 /temp/
+core
 core
