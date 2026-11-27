@@ -10,7 +10,7 @@ from .result_artifacts import file_stat
 def run(request, emit=lambda *a, **k:None):
     from .blend_support import build, cleanup, partial
     from .fbx_writer import write
-    from .gemx_result import is_project
+    is_project = lambda project: False
     from .scene_export import context
     request=Path(request)
     if request.stat().st_size>4*1024**2:raise ValueError('Export request is too large')
@@ -26,7 +26,6 @@ def run(request, emit=lambda *a, **k:None):
             raise ValueError('Unknown FBX profile.')
         mannequin_profiles = {}
         if 'ue5_mannequin' in profile_names:
-            from .ue5_reference import TARGETS, load_profiles, skin_for
             for row, profile in zip(rows, profile_names):
                 if profile != 'ue5_mannequin':
                     continue
@@ -65,11 +64,6 @@ def run(request, emit=lambda *a, **k:None):
                     output=work/'compatible.fbx'
                 else:
                     temporary=output=work/'mannequin.fbx'
-            if is_project(project):
-                from .gemx_skeleton_export import write as write_soma
-
-                def progress(done,total):
-                    emit('progress',stage='save_fbx',current=i*total+done,total=len(rows)*total,message='Export SOMA FBX')
 
                 staged.append((output,target,work))
                 native_checks.append(write_soma(temporary,row,source,destinations,'fbx',progress,ue5_target=mannequin,ue5_skin=skin,emit=emit))
@@ -103,7 +97,7 @@ def run(request, emit=lambda *a, **k:None):
                     emit('progress', stage='save_fbx', current=i*total+done, total=len(rows)*total,
                          message='Export UE5 Mannequin FBX' if mannequin is not None else 'Export FBX: '+kind)
                 if mannequin is not None:
-                    from .ue5_fbx import export_retargeted
+                    raise ValueError('UE5 mannequin export is not available in this build.')
                     positions = frames[:, :, :3, 3]
                     rotations = frames[:, :, :3, :3] @ a['fbx_display_frames']
                     export_retargeted(temporary, info['names'], a['fbx_rest'], a['fbx_rest_frames'],

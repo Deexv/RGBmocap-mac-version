@@ -5,7 +5,7 @@ import numpy as np
 from PySide6.QtWidgets import (QComboBox, QDialog, QDialogButtonBox, QHeaderView,
     QLabel, QTreeWidget, QTreeWidgetItem, QVBoxLayout)
 from . import project_workspace as workspace
-from .exmr_options import DEFAULTS as EXMR_DEFAULTS
+EXMR_DEFAULTS = {'static_camera': True, 'smoothing': 'none', 'refine_camera_rotation': False}
 from .local_choices import offered
 from .theme import set_appearance_style, ui_px
 from .project_storage import manifest
@@ -48,7 +48,7 @@ DEFAULT_SETTINGS = {
         'resource_mode': ('compute_mode', 'Resource Mode'),
     }),
 }
-PROJECT_DEFAULT_GROUPS = ('flow_options', 'exmr_options', 'prompthmr_options', 'correction')
+PROJECT_DEFAULT_GROUPS = ('correction',)
 DEFAULT_RESOURCE_MODE = 'auto'
 GVHMR_DEFAULTS = dict(htd=True, footmr=True, handflow=True)
 FLOW_DEFAULTS = dict(camera_interval=0, fast_sam=True, sam_batch4=True, sam_gpu_crop=True,
@@ -193,7 +193,7 @@ class ModelWorkspace:
 
     def reset_default_settings(self):
         from .correction_settings import correction_options
-        from .prompthmr_pipeline import options as prompthmr_options
+        prompthmr_options = lambda *a, **k: {}
         from .resource_safety import update
 
         built_in = dict(gvhmr_options=GVHMR_DEFAULTS,
@@ -302,7 +302,8 @@ class ModelWorkspace:
             state=manifest(self.project)
             state.setdefault('pipeline',{})['result']=self.active_result
             settings=self.workspace_settings()
-            for key in ('correction','flow_options','exmr_options','prompthmr_options'):state[key]=settings[key]
+            for key in PROJECT_DEFAULT_GROUPS:
+                if key in settings:state[key]=settings[key]
             atomic_json(self.project/'project.json',state)
             saved=workspace.set_active(root,state['pipeline']['model'],self.project,self.workspace_view())
             model=state['pipeline']['model']

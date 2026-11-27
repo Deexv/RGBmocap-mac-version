@@ -47,7 +47,7 @@ def artifacts_current(project,kind):
     """Only stat small metadata here; never read motion tensors in the GUI."""
     from .motion_tools import RESULTS
     project=Path(project)
-    from .gemx_result import is_project
+    is_project = lambda project: False
     if (project/'soma-result.json').exists() and is_project(project):
         from .motion_tools import result_is_current
         return result_is_current(project, kind, ignore_contacts=True)

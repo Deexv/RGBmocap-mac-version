@@ -28,9 +28,7 @@ def main(argv, emit):
     os.environ['RGB_MOCAP_STAGE']=PHASES[args.stage][phase]
     started=time.monotonic();all_cached=True;active=None
     try:
-        phases=({'gvhmr_batch':('pose','features','gvhmr'),
-                 'flow_batch':('flow_features','flowhmr'),
-                 'exmr_batch':('exmr_preprocess','body','hand','exmr')}[args.stage]
+        phases=({'gvhmr_batch':('pose','features','gvhmr')}[args.stage]
                 if phase=='all' else (phase,))
         for phase in phases:
             os.environ['RGB_MOCAP_STAGE']=PHASES[args.stage][phase]
@@ -48,14 +46,7 @@ def main(argv, emit):
                     options=dict(force=job['force'])
                     # Reset per-actor randomness, not the loaded model or its weights.
                     torch.manual_seed(0)
-                    if args.stage=='exmr_batch':
-                        from . import exmr_backend as backend
-                        backend.run_stage(active,stage,job['result'],observe,
-                            feature_phase=phase if phase in ('body','hand') else None,**options)
-                    elif args.stage=='flow_batch':
-                        from . import flow_backend as backend
-                        backend.run_stage(active,stage,job['result'],observe,**options)
-                    elif phase in ('pose','features'):
+                    if phase in ('pose','features'):
                         import psutil
                         from .memory_mode import select_stage
                         if not torch.cuda.is_available():raise RuntimeError('GVHMR requires a supported NVIDIA CUDA GPU')

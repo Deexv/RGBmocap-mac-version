@@ -5,8 +5,8 @@ A missing, unreadable or unoffered value keeps the window's own default.
 """
 
 MODEL = 'motion_model'
-DEFAULT_MODEL = 'exmr'
-OPTIONAL_RUNTIMES = ('mamma', 'prompthmr', 'gemx')
+DEFAULT_MODEL = 'gvhmr'
+OPTIONAL_RUNTIMES = ()
 
 
 def saved(key):

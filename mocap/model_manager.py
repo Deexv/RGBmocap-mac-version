@@ -13,8 +13,8 @@ from .storage import atomic_json
 
 
 def workflow_catalog():
-    from .flow_hamer import MODEL_KEYS
-    from .sam31_runtime import SUPPORTED
+    MODEL_KEYS = ()
+    SUPPORTED = ()
 
     catalog = {}
     for key, tool in MOTION_TOOLS.items():
@@ -95,9 +95,9 @@ def entry(path, root, *, allow_link=False):
 
 
 def runtime_aliases(model):
-    from .exmr_backend import LINKS as exmr_links
-    from .flow_backend import ASSET_LINKS
-    from .prompthmr_models import CAMERA_LINKS, LINKS as prompt_links
+    exmr_links = {}
+    ASSET_LINKS = {}
+    CAMERA_LINKS, prompt_links = {}, {}
 
     key = model.key
     if key != 'person_reid' and not key.startswith('phmr_'):
@@ -140,7 +140,9 @@ def installed_files(model):
         receipt = entry(model.receipt, MODELS)
         return (payload, *((receipt,) if receipt else ()), *linked_entries(model, payload))
 
-    from .pear_models import geometry_folder, spec
+    def geometry_folder(*_a, **_k):
+        return None
+    spec = lambda *_a, **_k: {'files': []}
     pointer = entry(model.path, MODELS)
     if pointer is None:
         return ()
@@ -207,7 +209,7 @@ def recovery_roots(keys, paths):
             allowed[payload.with_suffix(payload.suffix + '.receipt.json')] = MODELS
             allowed.update(runtime_aliases(model))
             continue
-        from .pear_models import spec
+        spec = lambda *_a, **_k: {'files': []}
         assets = {Path(item['path']) for item in spec()['files']}
         pear = MODELS / 'pear'
         for path in paths:

@@ -9,7 +9,10 @@ from PySide6.QtWidgets import (QComboBox, QFileDialog, QHBoxLayout, QLabel, QLis
 
 from .bone_stream import BoneStream, MAX_ACTORS, MAX_BAKE_FRAMES, PORT
 from .paths import ROOT
-from .unreal_stream import UnrealStream, subject_name
+from .bone_stream import Y_TO_Z
+UnrealStream = None
+def subject_name(name):
+    return name
 
 
 def stream_rig(asset):
@@ -23,7 +26,7 @@ class StreamWorkspace:
         column.setContentsMargins(5, 5, 5, 5)
         column.addWidget(QLabel('Target'))
         self.stream_target = QComboBox()
-        self.stream_target.addItems(['None', 'Blender', 'Unreal Live Link'])
+        self.stream_target.addItems(['None', 'Blender'])
         self.stream_target.setAccessibleName('Stream target')
         column.addWidget(self.stream_target)
         self.stream_port_controls = QWidget()
@@ -98,7 +101,7 @@ class StreamWorkspace:
 
     def change_stream_target(self, index):
         blender = index == 1 and not self._pear_active
-        unreal = index == 2 and not self._pear_active
+        unreal = False
         self.stream_port_controls.setVisible(blender)
         self.stream_unreal_controls.setVisible(unreal)
         self._stream_port_error = None
@@ -222,7 +225,7 @@ class StreamWorkspace:
             return
         from pathlib import Path
         from uuid import uuid4
-        from .unreal_stream import rig_schema
+        from .bone_stream import rig_schema
         from .storage import atomic_json
         from .blend_support import partial
         item = self.stream_people.currentItem()
@@ -343,7 +346,7 @@ class StreamWorkspace:
     def stream_face_at_playhead(self, ident):
         """Read existing Track Face data only; never start capture from streaming."""
         import numpy as np
-        from .face_data import manifest
+        manifest = None
 
         root = self.face_project()
         archive = self.face_playback_archive(root)
