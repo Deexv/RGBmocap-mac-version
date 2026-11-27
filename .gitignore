@@ -110,3 +110,4 @@ third_party/**/.git/
 
 # Local temporary shader/kernel caches
 /temp/
+core
