@@ -106,7 +106,7 @@ class StreamWorkspace:
         self.stream_unreal_controls.setVisible(unreal)
         self._stream_port_error = None
         if blender:
-            if isinstance(self._stream_sender, UnrealStream):
+            if self._stream_sender is not None and not isinstance(self._stream_sender, BoneStream):
                 self.close_stream()
             self.apply_stream_port()
         elif unreal:
@@ -408,11 +408,11 @@ class StreamWorkspace:
         else:
             error = sender.error()
             if error:
-                target = 'Unreal Live Link' if isinstance(sender, UnrealStream) else 'Blender stream'
+                unreal = not isinstance(sender, BoneStream)
+                target = 'Unreal Live Link' if unreal else 'Blender stream'
                 self.log.append(f'{target}: {error}')
-                if isinstance(sender, UnrealStream):
+                if unreal:
                     self._stream_port_error = str(error)
-            unreal = isinstance(sender, UnrealStream)
             connected = sender.connected
             sources = tuple(self.stream_sources_at_playhead(rows)) if connected or unreal else ()
             checked = tuple(sorted(self._stream_checked)) if connected or unreal else None
