@@ -6,8 +6,10 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, Q
     QTableWidget, QTableWidgetItem, QHeaderView, QPlainTextEdit, QAbstractItemView)
 
 from .export_options import FBX_A_POSE_DEGREES
-class FaceExportControls:
-    def __init__(self, *_a, **_k): pass
+from PySide6.QtWidgets import QWidget
+class FaceExportControls(QWidget):
+    def __init__(self, *_a, **_k):
+        super().__init__()
     def controls(self): return {}
     def options(self): return {}
 from .local_choices import apply_choices, control_values, remember, restore
