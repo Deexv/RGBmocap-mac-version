@@ -1,2 +1,7 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Preserve source manifests, registry hashes and wheel-source bytes across clones.
+# Newline rewriting is disabled; ordinary text diffs remain available.
+* -text
+*.ttf binary
+
+*.blend binary
+*.bmp binary
