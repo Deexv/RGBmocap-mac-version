@@ -15,9 +15,7 @@ no cloud, no subscription, no NVIDIA GPU required.
 
 ---
 
-https://github.com/Deexv/RGBmocap-mac-version/releases/download/demo-media/rgbmocap-demo.mp4
-
-<video src="docs/media/rgbmocap-demo.mp4" controls muted width="100%"></video>
+https://github.com/user-attachments/assets/4b82b97a-45ca-447c-8f53-725712e367b8
 
 *RGB MoCap running on a MacBook Pro (M1 Pro, 16 GB): drag a video in, reconstruct 3D human motion, review it in the viewport, and export to Blender.*
 ([download the clip](https://github.com/Deexv/RGBmocap-mac-version/releases/download/demo-media/rgbmocap-demo.mp4))
