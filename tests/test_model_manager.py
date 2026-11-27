@@ -40,6 +40,19 @@ class InstalledModelTests(unittest.TestCase):
         self.assertEqual(users['smplx'], ('gvhmr',))
         self.assertEqual(users['pva'], ('gvhmr',))
 
+    def test_people_discovery_models_are_preparable(self):
+        """Find person needs YOLO + OSNet; the catalog must offer both so the
+        Model Manager can prepare them instead of dead-ending (macOS trim bug)."""
+        users = manager.model_consumers(manager.workflow_catalog())
+        self.assertEqual(users['yolo'], ('gvhmr',))
+        self.assertEqual(users['person_reid'], ('gvhmr',))
+        # The optional SAM 3.1 tracker is not part of this build.
+        self.assertEqual(users.get('sam31_people'), ())
+        for key in ('yolo', 'person_reid'):
+            model = models.BY_KEY[key]
+            self.assertTrue(bool(model.drive_id or model.download_url),
+                            f'{key} must have a public download source')
+
     def test_removes_known_links_but_keeps_import_source_and_unrelated_files(self):
         atomic_json(self.receipt, {'source': str(self.external)})
         os.link(self.payload, self.alias)
