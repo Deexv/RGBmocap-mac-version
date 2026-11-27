@@ -13,23 +13,23 @@ from .storage import atomic_json
 
 
 def workflow_catalog():
-    MODEL_KEYS = ()
-    SUPPORTED = ()
+    # SAM 3.1 person tracking is not part of this build; YOLO+OSNet discovery is.
+    DISCOVERY_TOOLS = frozenset(('gvhmr',))
 
     catalog = {}
     for key, tool in MOTION_TOOLS.items():
         stages = tool.stages(refine=True, footmr=True, handflow=True)
         if key in ('mamma', 'prompthmr', 'pear', 'gemx'):
             stages = (*stages, key + '_assets')
-        if key in SUPPORTED:
-            stages = (*stages, 'people', 'sam31_people')
+        if key in DISCOVERY_TOOLS:
+            stages = (*stages, 'people')
         if key == 'pear':
             stages = (*stages, 'pear_align')
         if key == 'prompthmr':
             stages = (*stages, 'prompthmr_camera_assets')
         keys = {model for stage in stages for model in STAGE_REQUIREMENTS.get(stage, ())}
         if key == 'flowhmr':
-            keys.update(('flow_metadata', *MODEL_KEYS))
+            keys.update(('flow_metadata',))
         if not tool.live:
             from .rife_video import MODEL_KEY
             keys.add(MODEL_KEY)
