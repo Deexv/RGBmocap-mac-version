@@ -114,6 +114,15 @@ MODELS_LIST.extend([
           download_url='https://huggingface.co/facebook/sapiens2-pose-1b/resolve/f5fed8b97b99698d5eea1d14ff0855d0b4c3f000/sapiens2_1b_pose.safetensors',
           expected_sha256='2dab7014a17e99e460c18817325a71dd7a81ce48d87027f01c2ee7d7b3af969f'),
 ])
+MAMMA_INSTRUCTIONS = {}
+PHMR_INSTRUCTIONS = {}
+PHMR_CAMERA_INSTRUCTIONS = {}
+PEAR_INSTRUCTIONS = {}
+GEMX_INSTRUCTIONS = {}
+MAMMA_KEYS = ()
+PHMR_KEYS = ()
+PHMR_CAMERA_KEYS = ()
+GEMX_KEYS = ()
 BY_KEY = {model.key: model for model in MODELS_LIST}
 if len(BY_KEY)!=len(MODELS_LIST):raise ValueError('Duplicate model identifiers in the model registry.')
 MANUAL_INSTRUCTIONS = {

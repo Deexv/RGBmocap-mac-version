@@ -21,9 +21,10 @@ PROFILES = {
 WINDOWS = os.name == 'nt'
 MACOS = sys.platform == 'darwin'
 # Every platform pins the same package versions; only the wheel files differ.
-_SUFFIX = '' if WINDOWS else '-macos' if MACOS else '-linux'
-LOCK = f'installer/runtime-lock{_SUFFIX}.json'
-SUPPORT_LOCK = f'installer/git-support-lock{_SUFFIX}.json'
+# This repository ships only the Apple Silicon runtime profiles; the macOS
+# lock is resolved on every platform so validation tooling can inspect it.
+LOCK = 'installer/runtime-lock-macos.json'
+SUPPORT_LOCK = 'installer/git-support-lock-macos.json'
 if MACOS:
     # Apple Silicon wheels of the same torch releases carry no CUDA local version.
     for _spec in PROFILES.values():

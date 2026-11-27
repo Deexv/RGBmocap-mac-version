@@ -1,8 +1,10 @@
 """Export choices for an already baked character."""
 from PySide6.QtWidgets import QDialog,QVBoxLayout,QFormLayout,QComboBox,QCheckBox,QLabel,QDialogButtonBox
 
-class FaceExportControls:
-    def __init__(self, *_a, **_k): pass
+from PySide6.QtWidgets import QWidget
+class FaceExportControls(QWidget):
+    def __init__(self, *_a, **_k):
+        super().__init__()
     def controls(self): return {}
     def options(self): return {}
 from .local_choices import apply_choices, control_values, remember, restore
